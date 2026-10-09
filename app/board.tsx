@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useId, useState } from "react";
+import { FormEvent, useId, useState, useSyncExternalStore } from "react";
 import {
   DragDropProvider,
   useDraggable,
@@ -51,17 +51,17 @@ export type ChecklistItem = {
 };
 
 export type BoardActions = {
-  onAddBucket: (name: string) => void;
-  onRenameBucket: (bucketId: string, name: string) => void;
-  onDeleteBucket: (bucketId: string) => void;
-  onAddCard: (bucketId: string, title: string) => void;
-  onRenameCard: (cardId: string, title: string) => void;
-  onDeleteCard: (cardId: string) => void;
-  onMoveCard: (cardId: string, bucketId: string) => void;
-  onAddChecklistItem: (cardId: string, title: string) => void;
-  onRenameChecklistItem: (itemId: string, title: string) => void;
-  onToggleChecklistItem: (itemId: string, isDone: boolean) => void;
-  onDeleteChecklistItem: (itemId: string) => void;
+  onAddBucket: (name: string) => void | Promise<void>;
+  onRenameBucket: (bucketId: string, name: string) => void | Promise<void>;
+  onDeleteBucket: (bucketId: string) => void | Promise<void>;
+  onAddCard: (bucketId: string, title: string) => void | Promise<void>;
+  onRenameCard: (cardId: string, title: string) => void | Promise<void>;
+  onDeleteCard: (cardId: string) => void | Promise<void>;
+  onMoveCard: (cardId: string, bucketId: string) => void | Promise<void>;
+  onAddChecklistItem: (cardId: string, title: string) => void | Promise<void>;
+  onRenameChecklistItem: (itemId: string, title: string) => void | Promise<void>;
+  onToggleChecklistItem: (itemId: string, isDone: boolean) => void | Promise<void>;
+  onDeleteChecklistItem: (itemId: string) => void | Promise<void>;
 };
 
 type BoardProps = {
@@ -76,14 +76,28 @@ type BoardProps = {
 const MAX_BUCKETS = 25;
 const MAX_CHECKLIST_ITEMS = 10;
 const MAX_TITLE_LENGTH = 200;
+const THEME_EVENT = "boardlane-theme-change";
+
+function getThemeSnapshot(): "light" | "dark" {
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+}
+
+function subscribeToTheme(onChange: () => void) {
+  window.addEventListener(THEME_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(THEME_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
 
 function BrandMark() {
   return (
-    <span className="grid size-9 grid-cols-2 gap-1 rounded-[11px] bg-[#17243b] p-2 shadow-sm">
-      <span className="rounded-[2px] bg-white/95" />
-      <span className="rounded-[2px] bg-white/55" />
-      <span className="rounded-[2px] bg-[#74c69d]" />
-      <span className="rounded-[2px] bg-white/95" />
+    <span className="grid size-9 grid-cols-2 gap-1 rounded-[11px] bg-[var(--btn-primary-bg)] p-2 shadow-sm">
+      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-95" />
+      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-55" />
+      <span className="rounded-[2px] bg-[var(--accent)]" />
+      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-95" />
     </span>
   );
 }
@@ -124,24 +138,24 @@ function InlineForm({
         maxLength={MAX_TITLE_LENGTH}
         onChange={(event) => setValue(event.target.value)}
         placeholder={label}
-        className="w-full rounded-xl border border-[#cfd5da] bg-white px-3 py-2.5 text-sm text-[#1d2939] shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#4b8d6b] focus:ring-3 focus:ring-[#dcece4]"
+        className="w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] shadow-sm outline-none transition placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent)] focus:ring-3 focus:ring-[var(--accent-soft)]"
       />
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] text-slate-400">
+        <span className="text-[11px] text-[var(--text-tertiary)]">
           {value.length}/{MAX_TITLE_LENGTH}
         </span>
         <span className="flex gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)]"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!value.trim()}
-            className="rounded-lg bg-[#17243b] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#243653] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-[var(--btn-primary-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--btn-primary-text)] transition disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitLabel}
           </button>
@@ -165,19 +179,19 @@ function Checklist({
   const atLimit = items.length >= MAX_CHECKLIST_ITEMS;
 
   return (
-    <div className="mt-4 border-t border-slate-100 pt-3">
+    <div className="mt-4 border-t border-[var(--border-hairline)] pt-3">
       <div className="mb-2 flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-tertiary)]">
           <CheckSquare2 className="size-3.5" />
           Checklist
         </p>
-        <span className="text-[11px] font-medium text-slate-400">
+        <span className="text-[11px] font-medium text-[var(--text-tertiary)]">
           {items.filter((item) => item.isDone).length}/{items.length}
         </span>
       </div>
 
       {items.length === 0 && !adding ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
+        <p className="rounded-lg bg-[var(--bg-surface-2)] px-3 py-2 text-xs text-[var(--text-tertiary)]">
           No checklist items yet.
         </p>
       ) : (
@@ -196,13 +210,13 @@ function Checklist({
                   onCancel={() => setEditingId(null)}
                 />
               ) : (
-                <div className="group/item flex items-start gap-2 rounded-lg px-1 py-1.5 hover:bg-slate-50">
+                <div className="group/item flex items-start gap-2 rounded-lg px-1 py-1.5 hover:bg-[var(--bg-surface-2)]">
                   <button
                     type="button"
                     onClick={() =>
                       actions.onToggleChecklistItem(item._id, !item.isDone)
                     }
-                    className="mt-0.5 text-[#4b8d6b]"
+                    className="mt-0.5 text-[var(--accent)]"
                     aria-label={
                       item.isDone
                         ? `Mark ${item.title} incomplete`
@@ -212,12 +226,14 @@ function Checklist({
                     {item.isDone ? (
                       <CheckSquare2 className="size-4" />
                     ) : (
-                      <Circle className="size-4 text-slate-300" />
+                      <Circle className="size-4 text-[var(--text-tertiary)]" />
                     )}
                   </button>
                   <span
                     className={`min-w-0 flex-1 text-xs leading-5 ${
-                      item.isDone ? "text-slate-400 line-through" : "text-slate-600"
+                      item.isDone
+                        ? "text-[var(--text-tertiary)] line-through"
+                        : "text-[var(--text-secondary)]"
                     }`}
                   >
                     {item.title}
@@ -225,7 +241,7 @@ function Checklist({
                   <button
                     type="button"
                     onClick={() => setEditingId(item._id)}
-                    className="rounded p-1 text-slate-300 hover:bg-white hover:text-slate-600"
+                    className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
                     aria-label={`Rename ${item.title}`}
                   >
                     <Pencil className="size-3" />
@@ -233,7 +249,7 @@ function Checklist({
                   <button
                     type="button"
                     onClick={() => actions.onDeleteChecklistItem(item._id)}
-                    className="rounded p-1 text-slate-300 hover:bg-white hover:text-red-600"
+                    className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--danger)]"
                     aria-label={`Delete ${item.title}`}
                   >
                     <Trash2 className="size-3" />
@@ -262,7 +278,7 @@ function Checklist({
           type="button"
           disabled={atLimit}
           onClick={() => setAdding(true)}
-          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-[#397956] hover:bg-[#edf5f0] disabled:cursor-not-allowed disabled:text-slate-300"
+          className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:text-[var(--text-tertiary)]"
           title={atLimit ? "A card can have at most 10 checklist items." : undefined}
         >
           <Plus className="size-3.5" />
@@ -291,7 +307,6 @@ function TaskCard({
   const [editing, setEditing] = useState(false);
   const { ref, handleRef, isDragging } = useDraggable({
     id: card._id,
-    data: { cardId: card._id, bucketId: card.bucketId },
   });
 
   function confirmDelete() {
@@ -306,13 +321,13 @@ function TaskCard({
 
   return (
     <article
-      ref={ref}
+      ref={editing ? undefined : ref}
       role="listitem"
       className={`task-card rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-card)] ${
         isDragging
-          ? "z-50 rotate-3 scale-[1.03] opacity-80 shadow-[var(--shadow-drag)]"
+          ? "z-[70] rotate-3 scale-[1.03] opacity-80 shadow-[var(--shadow-drag)]"
           : isMoving
-            ? "ring-2 ring-[var(--accent)] ring-offset-2"
+            ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg-surface)]"
             : ""
       }`}
     >
@@ -330,14 +345,14 @@ function TaskCard({
       ) : (
         <>
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-[15px] font-semibold leading-6 tracking-[-0.01em] text-[#1d2939]">
+            <h3 className="text-[15px] font-semibold leading-6 tracking-[-0.01em] text-[var(--text-primary)]">
               {card.title}
             </h3>
             <button
               ref={handleRef}
               type="button"
               className="drag-handle -mr-1 -mt-1 grid size-9 shrink-0 cursor-grab place-items-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:cursor-grabbing"
-              aria-label={`Drag ${card.title}. Press Space to pick up, arrow keys to move, and Space to drop.`}
+              aria-label={`Drag ${card.title}`}
             >
               <GripVertical className="size-4" />
             </button>
@@ -346,21 +361,21 @@ function TaskCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100"
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)]"
             >
               Rename
             </button>
             <button
               type="button"
               onClick={isMoving ? onCancelMove : onStartMove}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-[#397956] hover:bg-[#edf5f0]"
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)]"
             >
               {isMoving ? "Cancel move" : "Move"}
             </button>
             <button
               type="button"
               onClick={confirmDelete}
-              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600"
+              className="rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--text-tertiary)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]"
             >
               Delete
             </button>
@@ -376,18 +391,24 @@ function TaskCard({
 function BucketColumn({
   bucket,
   cards,
+  totalCardCount,
+  hasSearchQuery,
   checklistItems,
   actions,
   movingCardId,
+  draggingOriginBucketId,
   onStartMove,
   onCancelMove,
   onMoveHere,
 }: {
   bucket: Bucket;
   cards: Card[];
+  totalCardCount: number;
+  hasSearchQuery: boolean;
   checklistItems: ChecklistItem[];
   actions: BoardActions;
   movingCardId: string | null;
+  draggingOriginBucketId: string | null;
   onStartMove: (cardId: string) => void;
   onCancelMove: () => void;
   onMoveHere: (bucketId: string) => void;
@@ -396,8 +417,9 @@ function BucketColumn({
   const [renaming, setRenaming] = useState(false);
   const { ref, isDropTarget } = useDroppable({
     id: bucket._id,
-    data: { bucketId: bucket._id },
   });
+  const showDropTarget =
+    isDropTarget && draggingOriginBucketId !== bucket._id;
 
   function confirmDelete() {
     if (
@@ -412,9 +434,8 @@ function BucketColumn({
   return (
     <section
       ref={ref}
-      role="list"
       className={`kanban-column w-[320px] shrink-0 snap-center rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-4 ${
-        isDropTarget ? "drop-target" : ""
+        showDropTarget ? "drop-target" : ""
       }`}
       aria-labelledby={`bucket-${bucket._id}`}
     >
@@ -434,22 +455,22 @@ function BucketColumn({
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="size-2 rounded-full bg-[#4b8d6b]" />
+                <span className="size-2 rounded-full bg-[var(--accent)]" />
                 <h2
                   id={`bucket-${bucket._id}`}
-                  className="text-sm font-semibold text-[#344054]"
+                  className="text-sm font-semibold text-[var(--text-primary)]"
                 >
                   {bucket.name}
                 </h2>
-                <span className="rounded-md bg-[#e6e9e7] px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                  {cards.length}
+                <span className="rounded-md bg-[var(--border-hairline)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-secondary)]">
+                  {totalCardCount}
                 </span>
               </div>
               <div className="flex items-center">
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700"
+                  className="rounded-lg p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
                   aria-label={`Rename ${bucket.name}`}
                 >
                   <Pencil className="size-3.5" />
@@ -457,7 +478,7 @@ function BucketColumn({
                 <button
                   type="button"
                   onClick={confirmDelete}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-lg p-1.5 text-[var(--text-tertiary)] hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]"
                   aria-label={`Delete ${bucket.name}`}
                 >
                   <Trash2 className="size-3.5" />
@@ -468,7 +489,7 @@ function BucketColumn({
               <button
                 type="button"
                 onClick={() => onMoveHere(bucket._id)}
-                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#9cc7ae] bg-[#edf5f0] px-3 py-2 text-xs font-semibold text-[#2f6d4a] hover:bg-[#e2f0e8]"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-2 text-xs font-semibold text-[var(--accent)]"
               >
                 Move selected card here
                 <ChevronRight className="size-3.5" />
@@ -478,17 +499,23 @@ function BucketColumn({
         )}
       </div>
 
-      <div className="space-y-3">
-        {isDropTarget && (
-          <div className="drop-placeholder rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--accent)]">
+      <div role="list" className="space-y-3">
+        {showDropTarget && (
+          <div role="listitem" className="drop-placeholder rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--accent)]">
             Drop here
           </div>
         )}
         {cards.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#d3d8dc] px-5 py-8 text-center">
-            <SquareKanban className="mx-auto size-5 text-slate-300" />
-            <p className="mt-2 text-sm font-medium text-slate-500">No cards yet</p>
-            <p className="mt-1 text-xs text-slate-400">Add the first task to this phase.</p>
+          <div className="rounded-2xl border border-dashed border-[var(--border-strong)] px-5 py-8 text-center">
+            <SquareKanban className="mx-auto size-5 text-[var(--text-tertiary)]" />
+            <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">
+              {hasSearchQuery && totalCardCount > 0 ? "No matching cards" : "No cards yet"}
+            </p>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+              {hasSearchQuery && totalCardCount > 0
+                ? "Try a different search."
+                : "Add the first task to this phase."}
+            </p>
           </div>
         ) : (
           cards.map((card) => (
@@ -503,9 +530,10 @@ function BucketColumn({
             />
           ))
         )}
+      </div>
 
-        {addingCard ? (
-          <div className="rounded-2xl border border-[#d8dde1] bg-white p-3">
+      {addingCard ? (
+          <div className="rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-3">
             <InlineForm
               label="Card title"
               submitLabel="Add card"
@@ -520,13 +548,12 @@ function BucketColumn({
           <button
             type="button"
             onClick={() => setAddingCard(true)}
-            className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[#d1d6da] px-3 py-3 text-sm font-medium text-slate-500 hover:border-[#9eaaa4] hover:bg-white/70 hover:text-[#274d39]"
+            className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-[var(--border-strong)] px-3 py-3 text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--accent)] hover:bg-[var(--bg-surface)] hover:text-[var(--accent)]"
           >
             <Plus className="size-4" />
             Add card
           </button>
         )}
-      </div>
     </section>
   );
 }
@@ -552,8 +579,15 @@ export function Board({
 }: BoardProps) {
   const [addingBucket, setAddingBucket] = useState(false);
   const [movingCardId, setMovingCardId] = useState<string | null>(null);
+  const [draggingOriginBucketId, setDraggingOriginBucketId] = useState<
+    string | null
+  >(null);
   const [query, setQuery] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    () => "light",
+  );
   const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const atBucketLimit = buckets.length >= MAX_BUCKETS;
   const completedItems = checklistItems.filter((item) => item.isDone).length;
@@ -566,25 +600,45 @@ export function Board({
 
   if (isLoading) return <LoadingBoard />;
 
-  function moveCard(bucketId: string) {
-    if (!movingCardId) return;
-    const card = cards.find((candidate) => candidate._id === movingCardId);
-    if (card && card.bucketId !== bucketId) {
-      actions.onMoveCard(movingCardId, bucketId);
-      const bucket = buckets.find((candidate) => candidate._id === bucketId);
-      setMoveAnnouncement(
-        `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
-      );
+  function changeTheme() {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem("boardlane-theme", nextTheme);
+    window.dispatchEvent(new Event(THEME_EVENT));
+  }
+
+  function announceMove(message: string) {
+    setMoveAnnouncement("");
+    window.setTimeout(() => setMoveAnnouncement(message), 0);
+  }
+
+  async function moveCard(
+    cardId: string,
+    bucketId: string,
+    announce: boolean,
+  ) {
+    const card = cards.find((candidate) => candidate._id === cardId);
+    if (!card || card.bucketId === bucketId) {
+      setMovingCardId(null);
+      return;
     }
-    setMovingCardId(null);
+
+    try {
+      await actions.onMoveCard(cardId, bucketId);
+      if (announce) {
+        const bucket = buckets.find((candidate) => candidate._id === bucketId);
+        announceMove(
+          `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
+        );
+      }
+    } finally {
+      setMovingCardId(null);
+    }
   }
 
   return (
-    <div
-      data-theme={theme}
-      className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-6"
-    >
-      <div className="app-shell mx-auto grid min-h-screen max-w-[1680px] overflow-hidden bg-[var(--bg-surface)] lg:min-h-[calc(100vh-48px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_28px_90px_rgba(0,0,0,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
+    <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-6">
+      <div className="app-shell mx-auto grid min-h-screen max-w-[1680px] bg-[var(--bg-surface)] lg:min-h-[calc(100vh-48px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_28px_90px_rgba(0,0,0,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
         <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-5 md:flex md:flex-col xl:px-4">
           <div className="flex items-center gap-3 px-1 xl:px-2">
             <BrandMark />
@@ -601,25 +655,41 @@ export function Board({
               <button
                 key={label}
                 type="button"
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                disabled={!active}
+                title={active ? undefined : `${label} is not yet available`}
                 className={`relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-semibold transition xl:justify-start ${
                   active
                     ? "bg-[var(--accent-soft)] text-[var(--text-primary)] before:absolute before:-left-3 before:h-6 before:w-[3px] before:rounded-full before:bg-[var(--accent)] xl:before:-left-4"
-                    : "text-[var(--text-secondary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                    : "cursor-not-allowed text-[var(--text-tertiary)] opacity-60"
                 }`}
               >
                 <Icon className={`size-5 ${active ? "text-[var(--accent)]" : ""}`} />
-                <span className="hidden xl:inline">{label}</span>
+                <span className="sr-only xl:not-sr-only">{label}</span>
               </button>
             ))}
           </nav>
           <div className="mt-auto space-y-2">
-            <button className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-black/[0.04] xl:justify-start">
+            <button
+              type="button"
+              disabled
+              aria-label="Help"
+              title="Help is not yet available"
+              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 xl:justify-start"
+            >
               <CircleHelp className="size-5" />
-              <span className="hidden xl:inline">Help</span>
+              <span className="sr-only xl:not-sr-only">Help</span>
             </button>
-            <button className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-black/[0.04] xl:justify-start">
+            <button
+              type="button"
+              disabled
+              aria-label="Settings"
+              title="Settings are not yet available"
+              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 xl:justify-start"
+            >
               <Settings className="size-5" />
-              <span className="hidden xl:inline">Settings</span>
+              <span className="sr-only xl:not-sr-only">Settings</span>
             </button>
           </div>
         </aside>
@@ -631,7 +701,23 @@ export function Board({
               <span className="sr-only">Search cards</span>
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  const nextQuery = event.target.value;
+                  setQuery(nextQuery);
+                  if (movingCardId) {
+                    const movingCard = cards.find(
+                      (card) => card._id === movingCardId,
+                    );
+                    if (
+                      movingCard &&
+                      !movingCard.title
+                        .toLowerCase()
+                        .includes(nextQuery.trim().toLowerCase())
+                    ) {
+                      setMovingCardId(null);
+                    }
+                  }
+                }}
                 placeholder="Search cards"
                 className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
               />
@@ -639,7 +725,7 @@ export function Board({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                onClick={changeTheme}
                 className="grid size-11 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
                 aria-label={`Use ${theme === "light" ? "dark" : "light"} theme`}
               >
@@ -660,7 +746,7 @@ export function Board({
             </div>
           </header>
 
-          <div className="px-5 pb-8 pt-8 md:px-8 md:pt-10">
+          <div className="px-5 pb-28 pt-8 md:px-8 md:pb-8 md:pt-10">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
@@ -683,7 +769,7 @@ export function Board({
         {error && (
           <div
             role="alert"
-            className="mb-5 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-[var(--danger)]"
+            className="mb-5 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--danger)_25%,transparent)] bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] px-4 py-3 text-sm text-[var(--danger)]"
           >
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
             <span>{error}</span>
@@ -730,33 +816,45 @@ export function Board({
           </section>
         ) : (
           <DragDropProvider
+            onDragStart={(event) => {
+              const cardId = String(event.operation.source?.id ?? "");
+              const card = cards.find((candidate) => candidate._id === cardId);
+              setDraggingOriginBucketId(card?.bucketId ?? null);
+            }}
             onDragEnd={(event) => {
+              setDraggingOriginBucketId(null);
               if (event.canceled) return;
               const cardId = String(event.operation.source?.id ?? "");
               const bucketId = String(event.operation.target?.id ?? "");
-              const card = cards.find((candidate) => candidate._id === cardId);
-              if (card && bucketId && card.bucketId !== bucketId) {
-                actions.onMoveCard(cardId, bucketId);
-                const bucket = buckets.find((candidate) => candidate._id === bucketId);
-                setMoveAnnouncement(
-                  `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
-                );
-              }
+              if (cardId && bucketId) void moveCard(cardId, bucketId, false);
             }}
           >
-          <div className="board-scroll overflow-x-auto pb-8">
-            <div className="flex min-w-max snap-x snap-mandatory items-start gap-6">
+          <div
+            className={`board-scroll overflow-x-auto pb-8 ${
+              draggingOriginBucketId ? "" : "snap-x snap-proximity"
+            }`}
+          >
+            <div className="flex min-w-max items-start gap-6">
               {buckets.map((bucket) => (
                 <BucketColumn
                   key={bucket._id}
                   bucket={bucket}
                   cards={visibleCards.filter((card) => card.bucketId === bucket._id)}
+                  totalCardCount={
+                    cards.filter((card) => card.bucketId === bucket._id).length
+                  }
+                  hasSearchQuery={query.trim().length > 0}
                   checklistItems={checklistItems}
                   actions={actions}
                   movingCardId={movingCardId}
+                  draggingOriginBucketId={draggingOriginBucketId}
                   onStartMove={setMovingCardId}
                   onCancelMove={() => setMovingCardId(null)}
-                  onMoveHere={moveCard}
+                  onMoveHere={(bucketId) => {
+                    if (movingCardId) {
+                      void moveCard(movingCardId, bucketId, true);
+                    }
+                  }}
                 />
               ))}
 
@@ -825,9 +923,9 @@ export function Board({
         </aside>
       </div>
       <nav className="glass-panel fixed inset-x-4 bottom-4 z-50 flex h-16 items-center justify-around rounded-2xl border border-[var(--border-hairline)] shadow-[var(--shadow-hover)] md:hidden" aria-label="Mobile navigation">
-        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--text-secondary)]" aria-label="Home"><Home className="size-5" /></button>
-        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--accent)]" aria-label="Board"><LayoutDashboard className="size-5" /></button>
-        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--text-secondary)]" aria-label="Progress"><BarChart3 className="size-5" /></button>
+        <button type="button" disabled className="grid min-h-11 min-w-11 cursor-not-allowed place-items-center text-[var(--text-tertiary)] opacity-60" aria-label="Home, not yet available" title="Home is not yet available"><Home className="size-5" /></button>
+        <button type="button" aria-current="page" className="grid min-h-11 min-w-11 place-items-center text-[var(--accent)]" aria-label="Board"><LayoutDashboard className="size-5" /></button>
+        <button type="button" disabled className="grid min-h-11 min-w-11 cursor-not-allowed place-items-center text-[var(--text-tertiary)] opacity-60" aria-label="Progress, not yet available" title="Progress is not yet available"><BarChart3 className="size-5" /></button>
       </nav>
       <p className="sr-only" aria-live="polite">{moveAnnouncement}</p>
     </div>
