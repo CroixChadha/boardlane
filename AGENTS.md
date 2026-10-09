@@ -71,6 +71,60 @@ Open, not yet decided by the owner. Do not fill these in:
 
 - Where CSV import sits in the order of issues.
 
+## Frontend brief (for Codex)
+
+The frontend agent may read anything under `convex/` but must not change it.
+
+**Build components against these data shapes.** They match `convex/schema.ts`. IDs are strings.
+
+| Thing | Fields |
+|---|---|
+| Bucket | `_id`, `name` |
+| Card | `_id`, `title`, `bucketId` |
+| Checklist item | `_id`, `title`, `cardId`, `isDone` |
+
+Every row also has `_creationTime` (a number). Buckets, cards and items are shown in creation order, oldest first.
+
+**Data comes in through props.** Components take their data and their actions (for example `onAddCard`, `onMoveCard`) as props, and are built and checked with placeholder data in these shapes. Do not call Convex from components, do not add a Convex provider to `app/layout.tsx`, and do not store board data in the browser. Connecting the page to Convex is backend work and happens after the components exist.
+
+**Backend functions.** "Exists" means it works on the development deployment today. "Planned" names and arguments may still change.
+
+| Function | Arguments | State |
+|---|---|---|
+| `buckets.list` | none | Exists |
+| `buckets.create` | `name` | Exists |
+| `buckets.rename` | `bucketId`, `name` | Exists |
+| `buckets.remove` | `bucketId` | Exists; also deletes the bucket's cards and their items |
+| `cards.create` | `title`, `bucketId` | Planned (owner is writing it) |
+| `cards.rename` | `cardId`, `title` | Planned |
+| `cards.move` | `cardId`, `bucketId` | Planned |
+| `cards.remove` | `cardId` | Planned; also deletes the card's items |
+| Checklist items: add, rename, tick/untick, remove | | Planned |
+| Load the whole board | | Planned |
+
+**What the interface must cover in the first version**
+
+- Add, rename and delete a bucket; add, rename and delete a card; add, rename, tick and delete a single checklist item.
+- Move a card two ways: drag it to a bucket, and click the card then click the target bucket. The second way must work without a mouse drag (touch and keyboard).
+- An "Are you sure?" confirmation before deleting a bucket or a card, saying that everything inside is deleted too.
+- The limits, enforced by the backend and reflected in the interface: 25 buckets per board, 10 checklist items per card, 200 characters per name or title, no empty names. The add control is disabled or hidden at a limit.
+- A place to show an error message from the backend. The backend rejects bad input with a short message written for the user, such as "A board can have at most 25 buckets."
+- Empty states: a board with no buckets, a bucket with no cards, a card with no checklist items.
+- Loading state: the page will receive no data for a moment before the board arrives.
+
+**Also in the first version.** Codex added these in PR #4 and the owner chose to keep them:
+
+- A light/dark theme toggle.
+- A progress panel and board overview, worked out from checklist progress (`isDone`). It needs no new backend data.
+- A navigation bar with Home.
+- A search box that filters cards.
+
+New features beyond this list still need the owner's agreement before they are built.
+
+**Not in the first version. Do not build these yet:** sign-in or any account interface, CSV import, priority, time taken, status, reordering within a bucket.
+
+**Libraries.** shadcn/ui components are added with `npx shadcn@latest add <name>`; only `button` is installed so far. Dragging needs a library; propose one to the owner before installing it.
+
 ## Workflow
 
 Every change after the initial scaffold follows the same path:
@@ -106,7 +160,7 @@ convex/             Convex schema and functions; one file per table
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The page is still the default Next.js starter page. `convex/schema.ts` defines all three tables. `convex/buckets.ts` (list, create, rename, remove) is complete and is the worked example for the owner. `convex/validation.ts` holds the shared title check. `convex/cards.ts` is the owner's: `create` is `TODO(learner)`, then rename, move and remove one at a time. Checklist item functions, loading the whole board, and the page are not started. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The board interface (PR #4, merged) runs on placeholder data in `app/page.tsx`; it is not connected to Convex yet. `convex/schema.ts` defines all three tables. `convex/buckets.ts` (list, create, rename, remove) is complete and is the worked example for the owner. `convex/validation.ts` holds the shared title check. `convex/cards.ts` is the owner's: `create` is `TODO(learner)`, then rename, move and remove one at a time. Checklist item functions, loading the whole board, and the page are not started. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
