@@ -2,16 +2,30 @@
 
 import { FormEvent, useId, useState } from "react";
 import {
+  DragDropProvider,
+  useDraggable,
+  useDroppable,
+} from "@dnd-kit/react";
+import {
   AlertCircle,
+  BarChart3,
   Check,
+  CheckCircle2,
   CheckSquare2,
   ChevronRight,
   Circle,
+  CircleHelp,
+  GripVertical,
+  Home,
+  LayoutDashboard,
   LoaderCircle,
-  MoreHorizontal,
+  Moon,
   Pencil,
   Plus,
+  Search,
+  Settings,
   SquareKanban,
+  Sun,
   Trash2,
 } from "lucide-react";
 
@@ -275,6 +289,10 @@ function TaskCard({
   onCancelMove: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const { ref, handleRef, isDragging } = useDraggable({
+    id: card._id,
+    data: { cardId: card._id, bucketId: card.bucketId },
+  });
 
   function confirmDelete() {
     if (
@@ -288,10 +306,14 @@ function TaskCard({
 
   return (
     <article
-      className={`rounded-2xl border bg-white p-4 shadow-[0_1px_2px_rgba(25,38,58,0.04),0_7px_20px_rgba(25,38,58,0.035)] transition ${
-        isMoving
-          ? "border-[#4b8d6b] ring-3 ring-[#dcece4]"
-          : "border-[#e4e7eb] hover:border-[#d1d7dd]"
+      ref={ref}
+      role="listitem"
+      className={`task-card rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-card)] ${
+        isDragging
+          ? "z-50 rotate-3 scale-[1.03] opacity-80 shadow-[var(--shadow-drag)]"
+          : isMoving
+            ? "ring-2 ring-[var(--accent)] ring-offset-2"
+            : ""
       }`}
     >
       {editing ? (
@@ -311,7 +333,14 @@ function TaskCard({
             <h3 className="text-[15px] font-semibold leading-6 tracking-[-0.01em] text-[#1d2939]">
               {card.title}
             </h3>
-            <MoreHorizontal className="mt-1 size-4 shrink-0 text-slate-300" />
+            <button
+              ref={handleRef}
+              type="button"
+              className="drag-handle -mr-1 -mt-1 grid size-9 shrink-0 cursor-grab place-items-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:cursor-grabbing"
+              aria-label={`Drag ${card.title}. Press Space to pick up, arrow keys to move, and Space to drop.`}
+            >
+              <GripVertical className="size-4" />
+            </button>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <button
@@ -365,6 +394,10 @@ function BucketColumn({
 }) {
   const [addingCard, setAddingCard] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const { ref, isDropTarget } = useDroppable({
+    id: bucket._id,
+    data: { bucketId: bucket._id },
+  });
 
   function confirmDelete() {
     if (
@@ -377,7 +410,14 @@ function BucketColumn({
   }
 
   return (
-    <section className="w-[300px] shrink-0" aria-labelledby={`bucket-${bucket._id}`}>
+    <section
+      ref={ref}
+      role="list"
+      className={`kanban-column w-[320px] shrink-0 snap-center rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-4 ${
+        isDropTarget ? "drop-target" : ""
+      }`}
+      aria-labelledby={`bucket-${bucket._id}`}
+    >
       <div className="mb-3 rounded-xl px-1">
         {renaming ? (
           <InlineForm
@@ -439,6 +479,11 @@ function BucketColumn({
       </div>
 
       <div className="space-y-3">
+        {isDropTarget && (
+          <div className="drop-placeholder rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--accent)]">
+            Drop here
+          </div>
+        )}
         {cards.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#d3d8dc] px-5 py-8 text-center">
             <SquareKanban className="mx-auto size-5 text-slate-300" />
@@ -488,9 +533,9 @@ function BucketColumn({
 
 function LoadingBoard() {
   return (
-    <div className="grid min-h-screen place-items-center bg-[#f4f5f3]">
-      <div className="flex items-center gap-3 rounded-2xl border border-[#e0e4e1] bg-white px-5 py-4 text-sm font-medium text-slate-600 shadow-sm">
-        <LoaderCircle className="size-4 animate-spin text-[#4b8d6b]" />
+    <div className="grid min-h-screen place-items-center bg-[var(--bg-page)]">
+      <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-5 py-4 text-sm font-medium text-[var(--text-secondary)] shadow-[var(--shadow-card)]">
+        <LoaderCircle className="size-4 animate-spin text-[var(--accent)]" />
         Loading your board…
       </div>
     </div>
@@ -507,7 +552,17 @@ export function Board({
 }: BoardProps) {
   const [addingBucket, setAddingBucket] = useState(false);
   const [movingCardId, setMovingCardId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const atBucketLimit = buckets.length >= MAX_BUCKETS;
+  const completedItems = checklistItems.filter((item) => item.isDone).length;
+  const completion = checklistItems.length
+    ? Math.round((completedItems / checklistItems.length) * 100)
+    : 0;
+  const visibleCards = cards.filter((card) =>
+    card.title.toLowerCase().includes(query.trim().toLowerCase()),
+  );
 
   if (isLoading) return <LoadingBoard />;
 
@@ -516,43 +571,119 @@ export function Board({
     const card = cards.find((candidate) => candidate._id === movingCardId);
     if (card && card.bucketId !== bucketId) {
       actions.onMoveCard(movingCardId, bucketId);
+      const bucket = buckets.find((candidate) => candidate._id === bucketId);
+      setMoveAnnouncement(
+        `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
+      );
     }
     setMovingCardId(null);
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f5f3] text-[#1d2939]">
-      <header className="border-b border-[#e2e5e3] bg-[#fbfcfa]/95 px-5 py-4 backdrop-blur md:px-8">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+    <div
+      data-theme={theme}
+      className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-6"
+    >
+      <div className="app-shell mx-auto grid min-h-screen max-w-[1680px] overflow-hidden bg-[var(--bg-surface)] lg:min-h-[calc(100vh-48px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_28px_90px_rgba(0,0,0,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
+        <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-5 md:flex md:flex-col xl:px-4">
+          <div className="flex items-center gap-3 px-1 xl:px-2">
             <BrandMark />
-            <div className="min-w-0">
-              <p className="text-lg font-bold tracking-[-0.035em] text-[#17243b]">
-                Boardlane
-              </p>
-              <p className="truncate text-xs text-slate-400">Development board</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            disabled={atBucketLimit}
-            onClick={() => setAddingBucket(true)}
-            className="flex h-10 items-center gap-2 rounded-xl bg-[#17243b] px-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#243653] disabled:cursor-not-allowed disabled:opacity-40"
-            title={atBucketLimit ? "A board can have at most 25 buckets." : undefined}
-          >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">
-              {atBucketLimit ? "Bucket limit reached" : "Add bucket"}
+            <span className="hidden text-lg font-semibold tracking-[-0.025em] xl:block">
+              Boardlane
             </span>
-          </button>
-        </div>
-      </header>
+          </div>
+          <nav className="mt-10 space-y-2" aria-label="Main navigation">
+            {[
+              { label: "Home", icon: Home },
+              { label: "Board", icon: LayoutDashboard, active: true },
+              { label: "Progress", icon: BarChart3 },
+            ].map(({ label, icon: Icon, active }) => (
+              <button
+                key={label}
+                type="button"
+                className={`relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-semibold transition xl:justify-start ${
+                  active
+                    ? "bg-[var(--accent-soft)] text-[var(--text-primary)] before:absolute before:-left-3 before:h-6 before:w-[3px] before:rounded-full before:bg-[var(--accent)] xl:before:-left-4"
+                    : "text-[var(--text-secondary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                }`}
+              >
+                <Icon className={`size-5 ${active ? "text-[var(--accent)]" : ""}`} />
+                <span className="hidden xl:inline">{label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="mt-auto space-y-2">
+            <button className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-black/[0.04] xl:justify-start">
+              <CircleHelp className="size-5" />
+              <span className="hidden xl:inline">Help</span>
+            </button>
+            <button className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-black/[0.04] xl:justify-start">
+              <Settings className="size-5" />
+              <span className="hidden xl:inline">Settings</span>
+            </button>
+          </div>
+        </aside>
 
-      <div className="mx-auto max-w-[1600px] px-5 py-5 md:px-8">
+        <main className="min-w-0 bg-[var(--bg-surface)]">
+          <header className="glass-panel sticky top-0 z-40 flex h-[72px] items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-8">
+            <label className="search-pill flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 text-[var(--text-secondary)] md:max-w-xs">
+              <Search className="size-4 shrink-0" />
+              <span className="sr-only">Search cards</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search cards"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
+              />
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                className="grid size-11 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
+                aria-label={`Use ${theme === "light" ? "dark" : "light"} theme`}
+              >
+                {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+              </button>
+              <button
+                type="button"
+                disabled={atBucketLimit}
+                onClick={() => setAddingBucket(true)}
+                className="primary-button flex h-11 items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 text-sm font-semibold text-[var(--btn-primary-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                title={atBucketLimit ? "A board can have at most 25 buckets." : undefined}
+              >
+                <Plus className="size-4" />
+                <span className="hidden sm:inline">
+                  {atBucketLimit ? "Limit reached" : "Add bucket"}
+                </span>
+              </button>
+            </div>
+          </header>
+
+          <div className="px-5 pb-8 pt-8 md:px-8 md:pt-10">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
+                  Development workspace
+                </p>
+                <h1 className="page-title text-[clamp(2.25rem,4vw,3.5rem)] font-semibold leading-[1.04] tracking-[-0.035em]">
+                  Product roadmap
+                </h1>
+              </div>
+              <div className="segmented-control flex rounded-full bg-[var(--bg-page)] p-1 text-sm font-medium">
+                <span className="rounded-full bg-[var(--bg-surface)] px-4 py-2 text-[var(--text-primary)] shadow-sm">
+                  Board
+                </span>
+                <span className="px-4 py-2 text-[var(--text-secondary)]">
+                  {cards.length} cards
+                </span>
+              </div>
+            </div>
+
         {error && (
           <div
             role="alert"
-            className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            className="mb-5 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-[var(--danger)]"
           >
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
             <span>{error}</span>
@@ -560,7 +691,7 @@ export function Board({
         )}
 
         {movingCardId && (
-          <div className="mb-5 flex items-center gap-2 rounded-xl border border-[#b9d5c4] bg-[#edf5f0] px-4 py-3 text-sm text-[#2f6d4a]">
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)]">
             <Check className="size-4" />
             <span className="flex-1 font-medium">
               Choose “Move selected card here” under a different bucket.
@@ -578,19 +709,19 @@ export function Board({
         {buckets.length === 0 && !addingBucket ? (
           <section className="grid min-h-[60vh] place-items-center">
             <div className="max-w-sm text-center">
-              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#e5efe9] text-[#397956]">
+              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
                 <SquareKanban className="size-6" />
               </span>
-              <h1 className="mt-4 text-xl font-bold tracking-tight text-[#17243b]">
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight">
                 Start your first phase
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 Buckets organize your cards into the stages of your project.
               </p>
               <button
                 type="button"
                 onClick={() => setAddingBucket(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#17243b] px-4 py-2.5 text-sm font-semibold text-white"
+                className="primary-button mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--btn-primary-text)]"
               >
                 <Plus className="size-4" />
                 Add a bucket
@@ -598,13 +729,28 @@ export function Board({
             </div>
           </section>
         ) : (
+          <DragDropProvider
+            onDragEnd={(event) => {
+              if (event.canceled) return;
+              const cardId = String(event.operation.source?.id ?? "");
+              const bucketId = String(event.operation.target?.id ?? "");
+              const card = cards.find((candidate) => candidate._id === cardId);
+              if (card && bucketId && card.bucketId !== bucketId) {
+                actions.onMoveCard(cardId, bucketId);
+                const bucket = buckets.find((candidate) => candidate._id === bucketId);
+                setMoveAnnouncement(
+                  `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
+                );
+              }
+            }}
+          >
           <div className="board-scroll overflow-x-auto pb-8">
-            <div className="flex min-w-max items-start gap-5">
+            <div className="flex min-w-max snap-x snap-mandatory items-start gap-6">
               {buckets.map((bucket) => (
                 <BucketColumn
                   key={bucket._id}
                   bucket={bucket}
-                  cards={cards.filter((card) => card.bucketId === bucket._id)}
+                  cards={visibleCards.filter((card) => card.bucketId === bucket._id)}
                   checklistItems={checklistItems}
                   actions={actions}
                   movingCardId={movingCardId}
@@ -615,7 +761,7 @@ export function Board({
               ))}
 
               {addingBucket && (
-                <div className="w-[300px] shrink-0 rounded-2xl border border-[#d8dde1] bg-white p-3 shadow-sm">
+                <div className="w-[320px] shrink-0 rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-4 shadow-[var(--shadow-card)]">
                   <InlineForm
                     label="Bucket name"
                     submitLabel="Add bucket"
@@ -629,8 +775,61 @@ export function Board({
               )}
             </div>
           </div>
+          </DragDropProvider>
         )}
+          </div>
+        </main>
+
+        <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface)] p-6 xl:block">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+            Board overview
+          </p>
+          <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.025em]">
+            Progress
+          </h2>
+          <div className="mt-6 rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5">
+            <div className="flex items-end justify-between">
+              <span className="text-4xl font-semibold tracking-[-0.04em]">{completion}%</span>
+              <CheckCircle2 className="size-6 text-[var(--success)]" />
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--border-hairline)]">
+              <div
+                className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-300"
+                style={{ width: `${completion}%` }}
+              />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+              {completedItems} of {checklistItems.length} checklist items complete
+            </p>
+          </div>
+          <div className="mt-5 rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5">
+            <p className="font-semibold">Move cards your way</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+              Drag a card by its handle, or choose Move and then select a destination bucket.
+            </p>
+          </div>
+          <dl className="mt-8 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-hairline)] pb-4">
+              <dt className="text-sm text-[var(--text-secondary)]">Buckets</dt>
+              <dd className="font-semibold">{buckets.length}</dd>
+            </div>
+            <div className="flex items-center justify-between border-b border-[var(--border-hairline)] pb-4">
+              <dt className="text-sm text-[var(--text-secondary)]">Cards</dt>
+              <dd className="font-semibold">{cards.length}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-sm text-[var(--text-secondary)]">Checklist items</dt>
+              <dd className="font-semibold">{checklistItems.length}</dd>
+            </div>
+          </dl>
+        </aside>
       </div>
-    </main>
+      <nav className="glass-panel fixed inset-x-4 bottom-4 z-50 flex h-16 items-center justify-around rounded-2xl border border-[var(--border-hairline)] shadow-[var(--shadow-hover)] md:hidden" aria-label="Mobile navigation">
+        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--text-secondary)]" aria-label="Home"><Home className="size-5" /></button>
+        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--accent)]" aria-label="Board"><LayoutDashboard className="size-5" /></button>
+        <button className="grid min-h-11 min-w-11 place-items-center text-[var(--text-secondary)]" aria-label="Progress"><BarChart3 className="size-5" /></button>
+      </nav>
+      <p className="sr-only" aria-live="polite">{moveAnnouncement}</p>
+    </div>
   );
 }
