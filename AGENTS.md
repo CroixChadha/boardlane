@@ -4,7 +4,7 @@ Instructions for every coding agent working in this repo (Claude Code, Codex, ot
 
 ## Project
 
-A personal kanban board web app tailored to software development work. It is a learning project and a portfolio candidate: it starts at the bare minimum and grows through GitHub issues and pull requests.
+**Boardlane** is a personal kanban board web app tailored to software development work. It is a learning project and a portfolio candidate: it starts at the bare minimum and grows through GitHub issues and pull requests.
 
 **The main idea:** the owner wants a free, easy-to-use board that can import a CSV written by an AI agent. Instead of typing every card and checklist by hand, the user prompts an agent, the agent writes a CSV, and importing it builds the board. Features that serve this idea come before small extras.
 
@@ -47,7 +47,7 @@ The repo owner is a beginner/intermediate Python programmer who knows HTML and C
 
 Modelled on Microsoft Planner.
 
-- A **bucket** is a column. It has a name, and the user can create as many buckets as they want.
+- A **bucket** is a column. It has a name. A board can have at most 25 buckets.
 - A **card** is a task. It sits inside a bucket and is the thing the user picks up and moves.
 - A card has a **title** and a **checklist** of items to complete. More fields are planned later.
 - Actions in the first version: add, edit and delete for buckets, cards and checklist items (each checklist item can be deleted on its own); move a card to another bucket; tick and untick a checklist item; load the whole board.
@@ -63,7 +63,7 @@ Modelled on Microsoft Planner.
 - **Data model:** three tables in `convex/schema.ts`. `buckets` (`name`); `cards` (`title`, `bucketId`); `checklistItems` (`title`, `cardId`, `isDone`). Buckets, cards and items show in the order they were created; there is no position column yet. The owner wrote the `checklistItems` table.
 - **Import CSV shape:** one row per checklist item, with three columns: bucket, card title, checklist item. Two rows are the same card when the bucket and the card title both match. A card with no checklist items has a row with an empty item cell.
 - Starting buckets while building: Phase 1 through Phase 5.
-- **Limits:** a card can have at most 10 checklist items. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
+- **Limits:** a board can have at most 25 buckets. A card can have at most 10 checklist items. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
 - **Deleting:** deleting a bucket also deletes its cards and their checklist items; deleting a card also deletes its checklist items. The page asks "Are you sure?" first.
 - **Environments:** the Convex project has a development deployment and a separate production deployment with separate data. All building and testing happens on development. Production changes only through a deliberate deploy, and agents never run one without the owner asking.
 
@@ -80,7 +80,7 @@ Every change after the initial scaffold follows the same path:
 3. Run the app and check the behaviour in a browser before opening a pull request. Earlier behaviour must still work.
 4. The pull request describes what changed and how it was checked, and closes its issue (`Closes #<number>`).
 
-Keep each pull request to one issue. Commit subjects are short and imperative ("Add bucket form"), and commits made by an agent say so in a `Co-Authored-By` trailer.
+Keep each pull request to one issue. Commit subjects are short and imperative ("Add bucket form"). Commits are authored by the owner only: do not add `Co-Authored-By`, "Generated with" or any other agent attribution line to commit messages or pull request descriptions.
 
 Do not create issues, push, or merge without the owner asking.
 
@@ -101,12 +101,12 @@ Backend work needs `npx convex dev` running in a second terminal; it syncs the `
 app/                Next.js pages and layout (App Router)
 components/ui/      shadcn/ui components
 lib/utils.ts        shadcn/ui helper
-convex/             Convex schema and functions (created by `npx convex dev`)
+convex/             Convex schema and functions; one file per table
 ```
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The page is still the default Next.js starter page. `convex/schema.ts` defines all three tables. No Convex functions yet. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The page is still the default Next.js starter page. `convex/schema.ts` defines all three tables. `convex/buckets.ts` (list, create, rename, remove) is complete and is the worked example for the owner. `convex/validation.ts` holds the shared title check. `convex/cards.ts` is the owner's: `create` is `TODO(learner)`, then rename, move and remove one at a time. Checklist item functions, loading the whole board, and the page are not started. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

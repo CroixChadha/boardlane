@@ -8,13 +8,21 @@
  * @module
  */
 
+import type * as buckets from "../buckets.js";
+import type * as cards from "../cards.js";
+import type * as validation from "../validation.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  buckets: typeof buckets;
+  cards: typeof cards;
+  validation: typeof validation;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

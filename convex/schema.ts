@@ -33,7 +33,10 @@ export default defineSchema({
   cards: defineTable({
     title: v.string(),
     bucketId: v.id("buckets"),
-  }),
+  })
+    // An index lets the database jump straight to "all cards in this bucket"
+    // without reading every card. The name says which column it is built on.
+    .index("by_bucketId", ["bucketId"]),
 
   // One row per checklist item.
   //   title   the item's text
@@ -44,4 +47,6 @@ export default defineSchema({
     cardId: v.id("cards"),
     isDone: v.boolean()
   })
+    // Same idea: find "all items on this card" directly.
+    .index("by_cardId", ["cardId"]),
 });

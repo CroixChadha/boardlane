@@ -23,4 +23,4 @@ Then open http://localhost:3000.
 
 ## Status
 
-Scaffold only. First version: buckets (columns) of task cards, where a card has a title and a checklist, with add, move, edit and delete.
+In progress. The database tables and the bucket functions exist; the card functions, checklist functions and the board page are next. First version: buckets (columns) of task cards, where a card has a title and a checklist, with add, move, edit and delete. CSV import follows.
