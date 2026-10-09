@@ -1,69 +1,99 @@
-import Image from "next/image";
+"use client";
+
+import { Board, type BoardActions } from "./board";
+
+const buckets = [
+  { _id: "bucket-1", _creationTime: 1, name: "Phase 1" },
+  { _id: "bucket-2", _creationTime: 2, name: "Phase 2" },
+  { _id: "bucket-3", _creationTime: 3, name: "Phase 3" },
+  { _id: "bucket-4", _creationTime: 4, name: "Phase 4" },
+  { _id: "bucket-5", _creationTime: 5, name: "Phase 5" },
+];
+
+const cards = [
+  {
+    _id: "card-1",
+    _creationTime: 1,
+    title: "Create the board interface",
+    bucketId: "bucket-1",
+  },
+  {
+    _id: "card-2",
+    _creationTime: 2,
+    title: "Connect bucket actions",
+    bucketId: "bucket-2",
+  },
+  {
+    _id: "card-3",
+    _creationTime: 3,
+    title: "Review the first version",
+    bucketId: "bucket-3",
+  },
+];
+
+const checklistItems = [
+  {
+    _id: "item-1",
+    _creationTime: 1,
+    title: "Build the board shell",
+    cardId: "card-1",
+    isDone: true,
+  },
+  {
+    _id: "item-2",
+    _creationTime: 2,
+    title: "Add card controls",
+    cardId: "card-1",
+    isDone: true,
+  },
+  {
+    _id: "item-3",
+    _creationTime: 3,
+    title: "Check empty states",
+    cardId: "card-1",
+    isDone: false,
+  },
+  {
+    _id: "item-4",
+    _creationTime: 4,
+    title: "Load buckets from Convex",
+    cardId: "card-2",
+    isDone: true,
+  },
+  {
+    _id: "item-5",
+    _creationTime: 5,
+    title: "Pass mutations as actions",
+    cardId: "card-2",
+    isDone: false,
+  },
+];
+
+// These placeholders make the frontend contract visible without calling Convex.
+// The backend owner can replace each function with the matching mutation later.
+const actions: BoardActions = {
+  onAddBucket: () => undefined,
+  onRenameBucket: () => undefined,
+  onDeleteBucket: () => undefined,
+  onAddCard: () => undefined,
+  onRenameCard: () => undefined,
+  onDeleteCard: () => undefined,
+  onMoveCard: () => undefined,
+  onAddChecklistItem: () => undefined,
+  onRenameChecklistItem: () => undefined,
+  onToggleChecklistItem: () => undefined,
+  onDeleteChecklistItem: () => undefined,
+};
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Board
+      buckets={buckets}
+      cards={cards}
+      checklistItems={checklistItems}
+      actions={actions}
+      isLoading={false}
+      error={null}
+    />
   );
 }
