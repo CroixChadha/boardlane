@@ -6,6 +6,8 @@ Instructions for every coding agent working in this repo (Claude Code, Codex, ot
 
 A personal kanban board web app tailored to software development work. It is a learning project and a portfolio candidate: it starts at the bare minimum and grows through GitHub issues and pull requests.
 
+**The main idea:** the owner wants a free, easy-to-use board that can import a CSV written by an AI agent. Instead of typing every card and checklist by hand, the user prompts an agent, the agent writes a CSV, and importing it builds the board. Features that serve this idea come before small extras.
+
 ## Tech stack
 
 | Layer | Tool |
@@ -52,10 +54,13 @@ Modelled on Microsoft Planner.
 - **Storage:** cards are stored in Convex from the start.
 - The owner does not plan to sell this as software as a service.
 
+- **Sign-in (Clerk) is not in the first version.** It comes later as an onboarding step for first-time users. Do not add Clerk code, including commented-out code, until an issue asks for it.
+- **CSV import is a planned feature**, not part of the first version's four actions.
+
 Open, not yet decided by the owner. Do not fill these in:
 
 - How buckets, cards and checklist items are represented in the Convex schema.
-- Whether Clerk sign-in is part of the first version.
+- What the import CSV looks like (its columns, and how one card's several checklist items are written).
 
 ## Workflow
 
@@ -103,3 +108,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->
