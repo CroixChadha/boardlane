@@ -1,6 +1,12 @@
-# Kanban Board
+# Boardlane
 
-A personal kanban board for software development work.
+A personal kanban board for software development work, with a focus on turning
+AI-generated CSV files into boards, cards and checklists.
+
+**Working project name:** Boardlane
+
+The public domain is not decided. `boardlane.io` was considered, but it is
+already registered.
 
 Stack: Next.js, Convex, Clerk, shadcn/ui, Tailwind CSS, hosted on Vercel.
 

@@ -41,6 +41,7 @@ The repo owner is a beginner/intermediate Python programmer who knows HTML and C
 - On owner-written code you may explain concepts, review, point out bugs and give hints. Write that code only when the owner explicitly asks you to.
 - **Do not make design decisions for the owner** (data model, functions, storage, features). Ask how they want it to work, then build what they chose. Offer options only when asked.
 - Prefer simple, readable code over clever code. Explain anything you add that the owner has not seen before.
+- The owner does not know TypeScript or JavaScript yet. What works for them: an agent writes one worked example with comments, comparing syntax to Python where it helps, and the owner writes the next similar piece themselves. Leave `TODO(learner)` blocks in that shape, not as blank stubs.
 
 ## Board design (from the owner)
 
@@ -49,7 +50,9 @@ Modelled on Microsoft Planner.
 - A **bucket** is a column. It has a name, and the user can create as many buckets as they want.
 - A **card** is a task. It sits inside a bucket and is the thing the user picks up and moves.
 - A card has a **title** and a **checklist** of items to complete. More fields are planned later.
-- Actions in the first version: add, move, edit and delete.
+- Actions in the first version: add, edit and delete for buckets, cards and checklist items (each checklist item can be deleted on its own); move a card to another bucket; tick and untick a checklist item; load the whole board.
+- Planned later, not in the first version: priority, time taken and status on cards.
+- When sign-in is added, data is tagged with the signed-in user's ID and each user sees only their own. The owner wants this to be very secure.
 - **Moving works two ways:** click and drag a card to a bucket, or click a card and then click the bucket it should go to.
 - **Storage:** cards are stored in Convex from the start.
 - The owner does not plan to sell this as software as a service.
@@ -57,10 +60,16 @@ Modelled on Microsoft Planner.
 - **Sign-in (Clerk) is not in the first version.** It comes later as an onboarding step for first-time users. Do not add Clerk code, including commented-out code, until an issue asks for it.
 - **CSV import is a planned feature**, not part of the first version's four actions.
 
+- **Data model:** three tables in `convex/schema.ts`. `buckets` (`name`); `cards` (`title`, `bucketId`); `checklistItems` (`title`, `cardId`, `isDone`). Buckets, cards and items show in the order they were created; there is no position column yet. The owner wrote the `checklistItems` table.
+- **Import CSV shape:** one row per checklist item, with three columns: bucket, card title, checklist item. Two rows are the same card when the bucket and the card title both match. A card with no checklist items has a row with an empty item cell.
+- Starting buckets while building: Phase 1 through Phase 5.
+- **Limits:** a card can have at most 10 checklist items. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
+- **Deleting:** deleting a bucket also deletes its cards and their checklist items; deleting a card also deletes its checklist items. The page asks "Are you sure?" first.
+- **Environments:** the Convex project has a development deployment and a separate production deployment with separate data. All building and testing happens on development. Production changes only through a deliberate deploy, and agents never run one without the owner asking.
+
 Open, not yet decided by the owner. Do not fill these in:
 
-- How buckets, cards and checklist items are represented in the Convex schema.
-- What the import CSV looks like (its columns, and how one card's several checklist items are written).
+- Where CSV import sits in the order of issues.
 
 ## Workflow
 
@@ -84,7 +93,7 @@ npm run dev
 
 The app is served at http://localhost:3000. `npm run build` and `npm run lint` must pass before a pull request is opened.
 
-Convex is installed as a package but not yet connected to an account; `npx convex dev` does that and must be run by the owner because it signs in through the browser. Clerk is not installed.
+Backend work needs `npx convex dev` running in a second terminal; it syncs the `convex/` folder to the dev deployment and reports errors. Clerk is not installed.
 
 ## Layout
 
@@ -97,7 +106,7 @@ convex/             Convex schema and functions (created by `npx convex dev`)
 
 ## Status
 
-Generated scaffold only: Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and the Convex package. The page is still the default Next.js starter page. No backend code, nothing committed or pushed. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The page is still the default Next.js starter page. `convex/schema.ts` defines all three tables. No Convex functions yet. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
