@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useId, useState, useSyncExternalStore } from "react";
+import { AutoScroller } from "@dnd-kit/dom";
 import {
   DragDropProvider,
+  KeyboardSensor,
+  PointerSensor,
   useDraggable,
   useDroppable,
 } from "@dnd-kit/react";
@@ -77,6 +80,24 @@ const MAX_BUCKETS = 25;
 const MAX_CHECKLIST_ITEMS = 10;
 const MAX_TITLE_LENGTH = 200;
 const THEME_EVENT = "boardlane-theme-change";
+
+// A card can be picked up with the mouse or a finger from anywhere on it, not
+// only from its grip handle. Buttons and inputs inside the card still work:
+// the sensor ignores a press that starts on one. The keyboard uses the handle.
+const dragSensors = [
+  PointerSensor.configure({
+    activatorElements: (source) => [source.element, source.handle],
+  }),
+  KeyboardSensor,
+];
+
+// By default the board starts scrolling when a dragged card is within the
+// outer 20% of its width, which covers most of the last visible bucket. Keep
+// the zone to a thin strip at the edge so aiming at a visible bucket is safe.
+const dragAutoScroller = AutoScroller.configure({
+  threshold: { x: 0.05, y: 0.1 },
+  acceleration: 12,
+});
 
 function getThemeSnapshot(): "light" | "dark" {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
@@ -320,7 +341,7 @@ function TaskCard({
     <article
       ref={editing ? undefined : ref}
       role="listitem"
-      className={`task-card rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-card)] ${
+      className={`task-card cursor-grab rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-card)] ${
         isDragging
           ? "z-[70] rotate-3 scale-[1.03] opacity-80 shadow-[var(--shadow-drag)]"
           : isMoving
@@ -815,6 +836,11 @@ export function Board({
           </section>
         ) : (
           <DragDropProvider
+            sensors={dragSensors}
+            plugins={(defaults) => [
+              ...defaults.filter((plugin) => plugin !== AutoScroller),
+              dragAutoScroller,
+            ]}
             onDragStart={(event) => {
               const cardId = String(event.operation.source?.id ?? "");
               const card = cards.find((candidate) => candidate._id === cardId);
@@ -902,7 +928,7 @@ export function Board({
           <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--accent)] p-5 text-[var(--btn-primary-text)]">
             <p className="font-semibold">Move cards your way</p>
             <p className="mt-2 text-sm leading-6 opacity-75">
-              Drag a card by its handle, or choose Move and then select a destination bucket.
+              Drag a card to another bucket, or choose Move and then select a destination bucket.
             </p>
           </div>
           <dl className="mt-8 space-y-4">
