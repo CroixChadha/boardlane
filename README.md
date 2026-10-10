@@ -37,11 +37,12 @@ One row is one checklist item on a card in a bucket:
 
 ```csv
 bucket,card title,checklist item
-Backlog,Set up login,Create sign-in form
-Backlog,Set up login,"Test wrong password, twice"
-Backlog,Design home page,Sketch layout
-In progress,Write docs,
-Done,,
+Backlog,Write the About page,Draft a short bio
+Backlog,Write the About page,Pick a profile photo
+Backlog,Add a contact form,"Add name, email and message fields"
+In progress,Set up the domain,Buy the domain
+Done,Choose a colour scheme,
+Review,,
 ```
 
 - Rows with the same bucket and card title are the same card, so a card with three checklist items takes three rows.
@@ -51,6 +52,8 @@ Done,,
 - Limits: 500 rows and 100 KB per file, 25 buckets, 50 cards per bucket, 10 checklist items per card, 200 characters per name.
 
 If anything is wrong, nothing is imported and the message says which row to fix. A ready-made example is in `examples/board.csv`.
+
+Inside the app, the **?** button next to Import CSV opens a guide with a prompt you can copy into an AI assistant and a **Load the demo board** button to see the result straight away.
 
 ## Status
 

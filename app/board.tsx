@@ -30,9 +30,10 @@ import {
   SquareKanban,
   Sun,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
-import { CsvImportButton } from "./csv-import";
+import { useCsvImport } from "./csv-import";
 
 export type Bucket = {
   _id: string;
@@ -623,6 +624,19 @@ export function Board({
   );
   const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const [importNotice, setImportNotice] = useState<string | null>(null);
+  const csvImport = useCsvImport({
+    boardHasContent: buckets.length > 0,
+    canImport: actions.onCheckCsvFile,
+    onImport: async (file) => {
+      setImportNotice(null);
+      const summary = await actions.onImportCsv(file);
+      if (summary) {
+        setImportNotice(
+          `Imported ${summary.buckets} buckets, ${summary.cards} cards and ${summary.checklistItems} checklist items from ${file.name}.`,
+        );
+      }
+    },
+  });
   const atBucketLimit = buckets.length >= MAX_BUCKETS;
   const completedItems = checklistItems.filter((item) => item.isDone).length;
   const completion = checklistItems.length
@@ -709,10 +723,10 @@ export function Board({
           <div className="mt-auto space-y-2">
             <button
               type="button"
-              disabled
+              onClick={csvImport.openGuide}
               aria-label="Help"
-              title="Help is not yet available"
-              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 xl:justify-start"
+              title="How CSV import works"
+              className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] xl:justify-start"
             >
               <CircleHelp className="size-5" />
               <span className="sr-only xl:not-sr-only">Help</span>
@@ -767,19 +781,27 @@ export function Board({
               >
                 {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
               </button>
-              <CsvImportButton
-                boardHasContent={buckets.length > 0}
-                canImport={actions.onCheckCsvFile}
-                onImport={async (file) => {
-                  setImportNotice(null);
-                  const summary = await actions.onImportCsv(file);
-                  if (summary) {
-                    setImportNotice(
-                      `Imported ${summary.buckets} buckets, ${summary.cards} cards and ${summary.checklistItems} checklist items from ${file.name}.`,
-                    );
-                  }
-                }}
-              />
+              <button
+                type="button"
+                onClick={csvImport.openGuide}
+                className="hidden size-10 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] sm:grid"
+                aria-label="How CSV import works"
+                title="How CSV import works"
+              >
+                <CircleHelp className="size-4" />
+              </button>
+              <button
+                type="button"
+                disabled={csvImport.importing}
+                onClick={csvImport.chooseFile}
+                className="flex h-10 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-2)] disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Import CSV"
+              >
+                <Upload className="size-4" />
+                <span className="hidden sm:inline">
+                  {csvImport.importing ? "Importing…" : "Import CSV"}
+                </span>
+              </button>
               <button
                 type="button"
                 disabled={atBucketLimit}
@@ -874,15 +896,27 @@ export function Board({
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 Buckets organize your cards into the stages of your project.
+                Add one by hand, or have an AI assistant plan the whole board
+                and import it as a CSV.
               </p>
-              <button
-                type="button"
-                onClick={() => setAddingBucket(true)}
-                className="primary-button mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--btn-primary-text)]"
-              >
-                <Plus className="size-4" />
-                Add a bucket
-              </button>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAddingBucket(true)}
+                  className="primary-button inline-flex items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--btn-primary-text)]"
+                >
+                  <Plus className="size-4" />
+                  Add a bucket
+                </button>
+                <button
+                  type="button"
+                  onClick={csvImport.openGuide}
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-2)]"
+                >
+                  <Upload className="size-4" />
+                  Import from a CSV
+                </button>
+              </div>
             </div>
           </section>
         ) : (
@@ -1004,6 +1038,7 @@ export function Board({
         <button type="button" disabled className="grid min-h-11 min-w-11 cursor-not-allowed place-items-center text-[var(--text-tertiary)] opacity-60" aria-label="Progress, not yet available" title="Progress is not yet available"><BarChart3 className="size-5" /></button>
       </nav>
       <p className="sr-only" aria-live="polite">{moveAnnouncement}</p>
+      {csvImport.elements}
     </div>
   );
 }
