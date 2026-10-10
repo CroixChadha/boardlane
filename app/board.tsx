@@ -127,8 +127,9 @@ function subscribeToTheme(onChange: () => void) {
 
 function BrandMark() {
   return (
-    <span className="grid size-9 place-items-center rounded-full bg-[var(--accent)] text-sm font-bold tracking-[-0.06em] text-[var(--btn-primary-text)] shadow-sm">
-      BL
+    <span className="relative grid size-9 place-items-center rounded-full bg-[var(--text-primary)] text-[var(--bg-surface)]">
+      <span className="absolute size-[18px] rounded-full border-[3px] border-current" />
+      <span className="absolute bottom-[7px] right-[6px] size-3 rotate-45 border-b-[3px] border-r-[3px] border-current" />
     </span>
   );
 }
@@ -465,7 +466,7 @@ function BucketColumn({
   return (
     <section
       ref={ref}
-      className={`kanban-column w-[320px] shrink-0 snap-center rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-3.5 ${
+      className={`kanban-column w-[320px] shrink-0 snap-center rounded-[20px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-3.5 ${
         showDropTarget ? "drop-target" : ""
       }`}
       aria-labelledby={`bucket-${bucket._id}`}
@@ -486,7 +487,7 @@ function BucketColumn({
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="size-2 rounded-sm bg-[var(--accent)]" />
+                <span className="bucket-tone size-2 rounded-full bg-[var(--accent)]" />
                 <h2
                   id={`bucket-${bucket._id}`}
                   className="text-sm font-semibold text-[var(--text-primary)]"
@@ -671,12 +672,12 @@ export function Board({
   }
 
   return (
-    <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-4">
-      <div className="app-shell mx-auto grid min-h-screen max-w-[1800px] overflow-clip bg-[var(--bg-surface)] lg:min-h-[calc(100vh-32px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[208px_minmax(0,1fr)_288px]">
+    <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-5">
+      <div className="app-shell mx-auto grid min-h-screen max-w-[1800px] overflow-clip bg-[var(--bg-surface)] lg:min-h-[calc(100vh-40px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_20px_70px_rgba(14,23,43,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[208px_minmax(0,1fr)_288px]">
         <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-4 md:flex md:flex-col xl:px-4">
           <div className="flex items-center gap-3 px-1 xl:px-2">
             <BrandMark />
-            <span className="hidden text-base font-bold tracking-[-0.035em] xl:block">
+            <span className="hidden text-lg font-medium tracking-[-0.04em] xl:block">
               Boardlane
             </span>
           </div>
@@ -695,7 +696,7 @@ export function Board({
                 title={active ? undefined : `${label} is not yet available`}
                 className={`relative flex h-10 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] px-3 text-sm font-medium transition xl:justify-start ${
                   active
-                    ? "bg-[var(--accent)] text-[var(--btn-primary-text)]"
+                    ? "bg-[var(--text-primary)] text-[var(--bg-surface)]"
                     : "cursor-not-allowed text-[var(--text-tertiary)] opacity-60"
                 }`}
               >
@@ -729,8 +730,8 @@ export function Board({
         </aside>
 
         <main className="min-w-0 bg-[var(--bg-surface)]">
-          <header className="glass-panel sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-7">
-            <label className="search-pill flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] px-3 text-[var(--text-secondary)] md:max-w-xs">
+          <header className="glass-panel sticky top-0 z-40 flex h-[68px] items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-7">
+            <label className="search-pill flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] px-4 text-[var(--text-secondary)] md:max-w-xs">
               <Search className="size-4 shrink-0" />
               <span className="sr-only">Search cards</span>
               <input
@@ -760,7 +761,7 @@ export function Board({
               <button
                 type="button"
                 onClick={changeTheme}
-                className="grid size-9 place-items-center rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                className="grid size-10 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]"
                 aria-label={`Use ${theme === "light" ? "dark" : "light"} theme`}
               >
                 {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
@@ -782,7 +783,7 @@ export function Board({
                 type="button"
                 disabled={atBucketLimit}
                 onClick={() => setAddingBucket(true)}
-                className="primary-button flex h-9 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--btn-primary-bg)] px-3.5 text-sm font-semibold text-[var(--btn-primary-text)] disabled:cursor-not-allowed disabled:opacity-40"
+                className="primary-button flex h-10 items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 text-sm font-medium text-[var(--btn-primary-text)] disabled:cursor-not-allowed disabled:opacity-40"
                 title={atBucketLimit ? "A board can have at most 25 buckets." : undefined}
               >
                 <Plus className="size-4" />
@@ -794,22 +795,26 @@ export function Board({
           </header>
 
           <div className="px-5 pb-28 pt-7 md:px-7 md:pb-8 md:pt-8">
-            <div className="mb-7 flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border-hairline)] pb-6">
+            <div className="relative mb-8 overflow-hidden rounded-[24px] bg-[var(--accent-yellow-soft)] px-6 py-7 md:px-8 md:py-9">
+              <span className="pointer-events-none absolute -right-12 -top-20 size-56 rounded-full bg-[var(--accent-red-soft)]" />
+              <span className="pointer-events-none absolute -bottom-24 right-28 size-48 rounded-full bg-[var(--accent-soft)]" />
+              <div className="relative flex flex-wrap items-end justify-between gap-5">
               <div>
-                <p className="mb-2 text-xs font-semibold tracking-[0.02em] text-[var(--accent)]">
-                  Boardlane / Development
+                <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
+                  Development workspace
                 </p>
-                <h1 className="page-title text-[clamp(2rem,4vw,3.35rem)] font-medium leading-[1.02] tracking-[-0.055em]">
-                  Product roadmap
+                <h1 className="editorial-title page-title text-[clamp(2.75rem,5vw,4.8rem)] leading-[0.98] tracking-[-0.045em]">
+                  Product <em>roadmap</em>
                 </h1>
               </div>
-              <div className="segmented-control flex rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-1 text-xs font-medium">
-                <span className="rounded-[7px] bg-[var(--bg-surface)] px-3 py-1.5 text-[var(--text-primary)] shadow-sm">
+              <div className="segmented-control flex rounded-full border border-[var(--border-hairline)] bg-[var(--bg-glass)] p-1 text-xs font-medium backdrop-blur-sm">
+                <span className="rounded-full bg-[var(--text-primary)] px-3.5 py-2 text-[var(--bg-surface)]">
                   Board
                 </span>
-                <span className="px-3 py-1.5 text-[var(--text-secondary)]">
+                <span className="px-3.5 py-2 text-[var(--text-secondary)]">
                   {cards.length} cards
                 </span>
+              </div>
               </div>
             </div>
 
@@ -947,14 +952,14 @@ export function Board({
           </div>
         </main>
 
-        <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5 xl:block">
-          <p className="text-xs font-semibold text-[var(--accent)]">
-            Boardlane / Overview
+        <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface)] p-5 xl:block">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">
+            Board overview
           </p>
-          <h2 className="mt-2 text-[26px] font-medium tracking-[-0.045em]">
+          <h2 className="editorial-title mt-2 text-[34px] tracking-[-0.035em]">
             Progress
           </h2>
-          <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-5">
+          <div className="mt-6 rounded-[20px] border border-[var(--border-hairline)] bg-[var(--accent-soft)] p-5">
             <div className="flex items-end justify-between">
               <span className="text-4xl font-semibold tracking-[-0.04em]">{completion}%</span>
               <CheckCircle2 className="size-6 text-[var(--success)]" />
@@ -969,7 +974,7 @@ export function Board({
               {completedItems} of {checklistItems.length} checklist items complete
             </p>
           </div>
-          <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--accent)] p-5 text-[var(--btn-primary-text)]">
+          <div className="mt-4 rounded-[20px] border border-[var(--border-hairline)] bg-[var(--text-primary)] p-5 text-[var(--bg-surface)]">
             <p className="font-semibold">Move cards your way</p>
             <p className="mt-2 text-sm leading-6 opacity-75">
               Drag a card to another bucket, or choose Move and then select a destination bucket.
