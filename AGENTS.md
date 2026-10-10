@@ -137,7 +137,7 @@ Every change after the initial scaffold follows the same path:
 
 Keep each pull request to one issue. Commit subjects are short and imperative ("Add bucket form"). Commits are authored by the owner only: do not add `Co-Authored-By`, "Generated with" or any other agent attribution line to commit messages or pull request descriptions.
 
-Do not create issues, push, or merge without the owner asking.
+Do not create issues, push, or merge without the owner asking. A merge to `main` goes live within minutes.
 
 ## Setup and run
 
@@ -159,6 +159,7 @@ Settings live in `.env.local`, which is never committed; `.env.example` lists th
 - Clerk handles accounts. `proxy.ts` sends signed-out visitors to `/sign-in`; only `/sign-in` and `/sign-up` are public.
 - `app/convex-client-provider.tsx` passes the Clerk session to Convex. `convex/auth.config.ts` tells Convex which Clerk application to trust, using the `CLERK_JWT_ISSUER_DOMAIN` variable set on each Convex deployment and a Clerk JWT template named `convex`.
 - **Every Convex function starts with `requireUser(ctx)`** from `convex/users.ts` and only reads or writes rows whose `ownerId` is that user. The user comes from the verified session, never from an argument. A row that belongs to someone else is reported exactly like a row that does not exist.
+- **Every function that changes data starts with `requireUserForWrite(ctx)`** instead, which also applies the per-user rate limit from `convex/rateLimits.ts`: 120 changes a minute, and 3 CSV imports in a burst refilling at 6 a minute.
 - Any new table gets an `ownerId` column and a `by_ownerId` index, and any new function gets a test in `convex/ownership.test.ts` showing a signed-out visitor and a second user are refused.
 - The Clerk development instance has two test users for automated browser checks, `e2e_alice` and `e2e_bob`. Sign them in with a one-time sign-in token from the Clerk API; they have no passwords.
 
@@ -174,7 +175,7 @@ convex/             Convex schema, functions (one file per table, plus board.ts)
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. CSV import works too (`app/csv-import.tsx` is the button and confirmation dialog). Sign-in with Clerk works, and each user has a private board. Not built yet: a production deployment and hosting on Vercel, and rate limiting. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. CSV import works too (`app/csv-import.tsx` is the button and confirmation dialog). Sign-in with Clerk works, and each user has a private board. It is live at https://boardlane.dev, hosted on Vercel with a Convex production deployment. **Every merge to `main` deploys to production automatically**: Vercel runs `npx convex deploy --cmd 'npm run build'`, which updates the production backend and then the site. Treat a merge as a release. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

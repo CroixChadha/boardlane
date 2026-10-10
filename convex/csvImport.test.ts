@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
@@ -16,6 +17,12 @@ import {
 
 const modules = import.meta.glob("./**/*.ts");
 const HEADER = "bucket,card title,checklist item";
+
+function signedIn() {
+  const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
+  return t.withIdentity({ subject: "user-a" });
+}
 
 // Returns the message of the ConvexError thrown by the callback.
 function errorOf(callback: () => unknown): string {
@@ -193,7 +200,7 @@ describe("parseBoardCsv", () => {
 
 describe("board.importCsv", () => {
   test("replaces the whole board and reports what it created", async () => {
-    const t = convexTest(schema, modules).withIdentity({ subject: "user-a" });
+    const t = signedIn();
     const oldBucket = await t.mutation(api.buckets.create, { name: "Old" });
     const oldCard = await t.mutation(api.cards.create, { bucketId: oldBucket, title: "Old card" });
     await t.mutation(api.checklistItems.create, { cardId: oldCard, title: "Old item" });
@@ -215,7 +222,7 @@ describe("board.importCsv", () => {
   });
 
   test("a CSV that fails validation leaves the board untouched", async () => {
-    const t = convexTest(schema, modules).withIdentity({ subject: "user-a" });
+    const t = signedIn();
     const bucketId = await t.mutation(api.buckets.create, { name: "Keep" });
     await t.mutation(api.cards.create, { bucketId, title: "Keep card" });
 

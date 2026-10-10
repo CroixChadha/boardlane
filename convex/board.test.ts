@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
@@ -15,7 +16,9 @@ const modules = import.meta.glob("./**/*.ts");
 
 // Every function needs a signed-in user, so tests act as one.
 function setup() {
-  return convexTest(schema, modules).withIdentity({ subject: "user-a" });
+  const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
+  return t.withIdentity({ subject: "user-a" });
 }
 
 // Resolves to the message of the ConvexError the promise rejects with.

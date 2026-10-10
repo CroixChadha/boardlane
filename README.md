@@ -54,4 +54,4 @@ If anything is wrong, nothing is imported and the message says which row to fix.
 
 ## Status
 
-The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex, plus CSV import. Sign-in is required, and each account has its own private board. Next: a public deployment.
+The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex, plus CSV import. Sign-in is required, and each account has its own private board. It is live at https://boardlane.dev.

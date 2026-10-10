@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { parseBoardCsv } from "./csvImport";
-import { requireUser } from "./users";
+import { requireUser, requireUserForWrite } from "./users";
 import {
   MAX_BUCKETS,
   MAX_CARDS_PER_BUCKET,
@@ -40,7 +40,7 @@ export const get = query({
 export const importCsv = mutation({
   args: { csv: v.string() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx, "importCsv");
     const parsed = parseBoardCsv(args.csv);
 
     const ownItems = ctx.db
