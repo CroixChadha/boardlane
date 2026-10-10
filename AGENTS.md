@@ -161,6 +161,8 @@ Settings live in `.env.local`, which is never committed; `.env.example` lists th
 - **Every Convex function starts with `requireUser(ctx)`** from `convex/users.ts` and only reads or writes rows whose `ownerId` is that user. The user comes from the verified session, never from an argument. A row that belongs to someone else is reported exactly like a row that does not exist.
 - **Every function that changes data starts with `requireUserForWrite(ctx)`** instead, which also applies the per-user rate limit from `convex/rateLimits.ts`: 120 changes a minute, and 3 CSV imports in a burst refilling at 6 a minute.
 - Any new table gets an `ownerId` column and a `by_ownerId` index, and any new function gets a test in `convex/ownership.test.ts` showing a signed-out visitor and a second user are refused.
+- **Two Clerk instances.** Development (`*.clerk.accounts.dev`) is used by localhost and the Convex dev deployment. Production (`https://clerk.boardlane.dev`) is used by the live site and the Convex production deployment, with email and GitHub sign-in; Google is off in production until credentials are set up. Users do not carry over between them. Vercel holds the production keys for its Production environment.
+- Pull request preview builds on Vercel currently fail, because the Convex deploy key is for production only and Convex refuses to use it from a preview. That is harmless; the production build on merge is what matters.
 - The Clerk development instance has two test users for automated browser checks, `e2e_alice` and `e2e_bob`. Sign them in with a one-time sign-in token from the Clerk API; they have no passwords.
 
 ## Layout
