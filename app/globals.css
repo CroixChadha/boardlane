@@ -32,48 +32,63 @@
 }
 
 :root {
-  --bg-page: #f1f0ec;
-  --bg-surface: #fbfaf7;
-  --bg-surface-2: #f5f3ee;
-  --bg-glass: rgba(251, 250, 247, 0.9);
-  --text-primary: #191823;
-  --text-secondary: #64616d;
-  --text-tertiary: #8c8993;
-  --border-hairline: rgba(36, 31, 48, 0.1);
-  --border-strong: rgba(36, 31, 48, 0.18);
-  --accent: #6246db;
-  --accent-hover: #5135c8;
-  --accent-soft: rgba(98, 70, 219, 0.11);
-  --btn-primary-bg: #6246db;
+  --bg-page: #f7f7f8;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #fafafb;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --text-primary: #17191c;
+  --text-secondary: #777b86;
+  --text-tertiary: #a3a6af;
+  --border-hairline: rgba(14, 23, 43, 0.1);
+  --border-strong: rgba(14, 23, 43, 0.17);
+  --accent: #2f6fe5;
+  --accent-hover: #245fc9;
+  --accent-soft: #e9f1fe;
+  --accent-red: #e53b79;
+  --accent-red-soft: #f9eeeb;
+  --accent-green: #17975e;
+  --accent-green-soft: #e6f4eb;
+  --accent-purple: #7a2bec;
+  --accent-purple-soft: #f2edfc;
+  --accent-yellow-soft: #f8f5e2;
+  --btn-primary-bg: #17191c;
   --btn-primary-text: #ffffff;
   --success: #168a66;
   --warning: #b86f18;
   --danger: #d84756;
-  --radius-sm: 7px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --shadow-card: 0 1px 2px rgba(36, 31, 48, 0.04);
-  --shadow-hover: 0 12px 28px rgba(55, 43, 91, 0.1);
-  --shadow-drag: 0 24px 60px rgba(40, 31, 74, 0.2);
-  --font-sans: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-card: 0 1px 2px rgba(14, 23, 43, 0.04), 0 6px 18px rgba(14, 23, 43, 0.035);
+  --shadow-hover: 0 16px 36px rgba(14, 23, 43, 0.1);
+  --shadow-drag: 0 24px 60px rgba(14, 23, 43, 0.2);
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
 }
 
 [data-theme="dark"] {
-  --bg-page: #111015;
-  --bg-surface: #19181e;
-  --bg-surface-2: #211f27;
-  --bg-glass: rgba(25, 24, 30, 0.9);
-  --text-primary: #f4f1fa;
-  --text-secondary: #b6b1bf;
-  --text-tertiary: #85808e;
+  --bg-page: #111214;
+  --bg-surface: #1a1a1a;
+  --bg-surface-2: #232323;
+  --bg-glass: rgba(26, 26, 26, 0.88);
+  --text-primary: #ffffff;
+  --text-secondary: #b4b5ba;
+  --text-tertiary: #7f8188;
   --border-hairline: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --accent: #9c87ff;
-  --accent-hover: #ad9aff;
-  --accent-soft: rgba(156, 135, 255, 0.15);
-  --btn-primary-bg: #9c87ff;
-  --btn-primary-text: #17131f;
+  --accent: #79a6f5;
+  --accent-hover: #91b6f7;
+  --accent-soft: rgba(47, 111, 229, 0.2);
+  --accent-red: #eb8080;
+  --accent-red-soft: rgba(229, 59, 121, 0.16);
+  --accent-green: #54bd8d;
+  --accent-green-soft: rgba(23, 151, 94, 0.18);
+  --accent-purple: #b697dd;
+  --accent-purple-soft: rgba(122, 43, 236, 0.18);
+  --accent-yellow-soft: rgba(248, 245, 226, 0.12);
+  --btn-primary-bg: #ffffff;
+  --btn-primary-text: #17191c;
 }
 
 @layer base {
@@ -106,9 +121,8 @@
 @layer utilities {
   .board-stage {
     background-image:
-      linear-gradient(color-mix(in srgb, var(--border-hairline) 45%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--border-hairline) 45%, transparent) 1px, transparent 1px);
-    background-size: 48px 48px;
+      radial-gradient(circle at 8% 12%, var(--accent-red-soft), transparent 24rem),
+      radial-gradient(circle at 92% 2%, var(--accent-soft), transparent 28rem);
   }
 
   .glass-panel {
@@ -125,7 +139,7 @@
   }
 
   .task-card:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
     border-color: color-mix(in srgb, var(--accent) 24%, var(--border-hairline));
   }
@@ -161,6 +175,35 @@
     transition:
       border-color 180ms ease,
       background-color 180ms ease;
+  }
+
+  .kanban-column:nth-child(5n + 1) .bucket-tone {
+    background: var(--accent-red);
+  }
+
+  .kanban-column:nth-child(5n + 2) .bucket-tone {
+    background: var(--accent);
+  }
+
+  .kanban-column:nth-child(5n + 3) .bucket-tone {
+    background: var(--accent-green);
+  }
+
+  .kanban-column:nth-child(5n + 4) .bucket-tone {
+    background: var(--accent-purple);
+  }
+
+  .kanban-column:nth-child(5n + 5) .bucket-tone {
+    background: #d6b44a;
+  }
+
+  .editorial-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+  }
+
+  .editorial-title em {
+    font-weight: 400;
   }
 
   .drop-target {
