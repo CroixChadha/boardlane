@@ -13,8 +13,9 @@ import {
 
 const modules = import.meta.glob("./**/*.ts");
 
+// Every function needs a signed-in user, so tests act as one.
 function setup() {
-  return convexTest(schema, modules);
+  return convexTest(schema, modules).withIdentity({ subject: "user-a" });
 }
 
 // Resolves to the message of the ConvexError the promise rejects with.

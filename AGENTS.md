@@ -51,12 +51,12 @@ Modelled on Microsoft Planner.
 - A card has a **title** and a **checklist** of items to complete. More fields are planned later.
 - Actions in the first version: add, edit and delete for buckets, cards and checklist items (each checklist item can be deleted on its own); move a card to another bucket; tick and untick a checklist item; load the whole board.
 - Planned later, not in the first version: priority, time taken and status on cards.
-- When sign-in is added, data is tagged with the signed-in user's ID and each user sees only their own. The owner wants this to be very secure.
+- Every bucket, card and checklist item records its owner, and each user sees and changes only their own. The owner wants this to be very secure.
 - **Moving works two ways:** click and drag a card to a bucket, or click a card and then click the bucket it should go to.
 - **Storage:** cards are stored in Convex from the start.
 - The owner does not plan to sell this as software as a service.
 
-- **Sign-in (Clerk) is not in the first version.** It comes later as an onboarding step for first-time users. Do not add Clerk code, including commented-out code, until an issue asks for it.
+- **Sign-in (Clerk) is required.** A signed-out visitor to any page is sent to `/sign-in`; `/sign-up` is the onboarding step for a first-time user. Each user has one private board.
 - **CSV import replaces the whole board.** Every existing bucket, card and checklist item is deleted and the CSV's are created. When the board has anything on it, the page first asks "CSV import will delete all current buckets and cards. Proceed?" with Yes and No. The format is documented in the README, with an example in `examples/board.csv`.
 
 - **Data model:** three tables in `convex/schema.ts`. `buckets` (`name`); `cards` (`title`, `bucketId`); `checklistItems` (`title`, `cardId`, `isDone`). Buckets, cards and items show in the order they were created; there is no position column yet. The owner wrote the `checklistItems` table.
@@ -84,7 +84,7 @@ Every row also has `_creationTime` (a number). Buckets, cards and items are show
 
 **How actions behave.** Every action returns a promise. If the backend rejects a call, the page puts the backend's message in the `error` prop and the promise still resolves, except `onMoveCard`, which rejects so the board does not announce a move that failed. Moving a card and ticking an item update the board immediately and roll back if the backend rejects them.
 
-**Backend functions.** All of these work on the development deployment.
+**Backend functions.** All of these work on the development deployment. Every one requires a signed-in user and acts only on that user's rows.
 
 | Function | Arguments | Notes |
 |---|---|---|
@@ -122,7 +122,7 @@ Every row also has `_creationTime` (a number). Buckets, cards and items are show
 
 New features beyond this list still need the owner's agreement before they are built.
 
-**Not in the first version. Do not build these yet:** sign-in or any account interface, priority, time taken, status, reordering within a bucket.
+**Not in the first version. Do not build these yet:** priority, time taken, status, reordering within a bucket.
 
 **Libraries.** shadcn/ui components are added with `npx shadcn@latest add <name>`; only `button` is installed so far. Dragging needs a library; propose one to the owner before installing it.
 
@@ -150,12 +150,23 @@ The app is served at http://localhost:3000. `npm run build`, `npm run lint` and 
 
 `npm test` runs the backend tests in `convex/*.test.ts` against an in-memory Convex. Any change to a backend function comes with a test.
 
-Backend work needs `npx convex dev` running in a second terminal; it syncs the `convex/` folder to the dev deployment and reports errors. Clerk is not installed.
+Backend work needs `npx convex dev` running in a second terminal; it syncs the `convex/` folder to the dev deployment and reports errors.
+
+Settings live in `.env.local`, which is never committed; `.env.example` lists the names. Do not print or paste the Clerk secret key anywhere.
+
+## Sign-in and security
+
+- Clerk handles accounts. `proxy.ts` sends signed-out visitors to `/sign-in`; only `/sign-in` and `/sign-up` are public.
+- `app/convex-client-provider.tsx` passes the Clerk session to Convex. `convex/auth.config.ts` tells Convex which Clerk application to trust, using the `CLERK_JWT_ISSUER_DOMAIN` variable set on each Convex deployment and a Clerk JWT template named `convex`.
+- **Every Convex function starts with `requireUser(ctx)`** from `convex/users.ts` and only reads or writes rows whose `ownerId` is that user. The user comes from the verified session, never from an argument. A row that belongs to someone else is reported exactly like a row that does not exist.
+- Any new table gets an `ownerId` column and a `by_ownerId` index, and any new function gets a test in `convex/ownership.test.ts` showing a signed-out visitor and a second user are refused.
+- The Clerk development instance has two test users for automated browser checks, `e2e_alice` and `e2e_bob`. Sign them in with a one-time sign-in token from the Clerk API; they have no passwords.
 
 ## Layout
 
 ```
-app/                Next.js pages and layout (App Router)
+app/                Next.js pages and layout (App Router), including sign-in and sign-up
+proxy.ts            Requires sign-in for every page except sign-in and sign-up
 components/ui/      shadcn/ui components
 lib/utils.ts        shadcn/ui helper
 convex/             Convex schema, functions (one file per table, plus board.ts) and tests
@@ -163,7 +174,7 @@ convex/             Convex schema, functions (one file per table, plus board.ts)
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. CSV import works too (`app/csv-import.tsx` is the button and confirmation dialog). Not built yet: sign-in, a production deployment and hosting on Vercel. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. CSV import works too (`app/csv-import.tsx` is the button and confirmation dialog). Sign-in with Clerk works, and each user has a private board. Not built yet: a production deployment and hosting on Vercel, and rate limiting. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -1,11 +1,17 @@
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type MutationCtx } from "./_generated/server";
+import { requireUser } from "./users";
 import { cleanTitle, MAX_CHECKLIST_ITEMS_PER_CARD } from "./validation";
 
-async function requireItem(ctx: MutationCtx, itemId: Id<"checklistItems">) {
+// Throws unless the item exists and belongs to the user.
+async function requireItem(
+  ctx: MutationCtx,
+  ownerId: string,
+  itemId: Id<"checklistItems">,
+) {
   const item = await ctx.db.get("checklistItems", itemId);
-  if (item === null) {
+  if (item === null || item.ownerId !== ownerId) {
     throw new ConvexError("That checklist item no longer exists.");
   }
   return item;
@@ -15,9 +21,10 @@ async function requireItem(ctx: MutationCtx, itemId: Id<"checklistItems">) {
 export const create = mutation({
   args: { cardId: v.id("cards"), title: v.string() },
   handler: async (ctx, args) => {
+    const ownerId = await requireUser(ctx);
     const title = cleanTitle(args.title);
     const card = await ctx.db.get("cards", args.cardId);
-    if (card === null) {
+    if (card === null || card.ownerId !== ownerId) {
       throw new ConvexError("That card no longer exists.");
     }
     const items = await ctx.db
@@ -33,6 +40,7 @@ export const create = mutation({
       title,
       cardId: args.cardId,
       isDone: false,
+      ownerId,
     });
   },
 });
@@ -41,8 +49,9 @@ export const create = mutation({
 export const rename = mutation({
   args: { itemId: v.id("checklistItems"), title: v.string() },
   handler: async (ctx, args) => {
+    const ownerId = await requireUser(ctx);
     const title = cleanTitle(args.title);
-    await requireItem(ctx, args.itemId);
+    await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.patch("checklistItems", args.itemId, { title });
     return null;
   },
@@ -53,7 +62,8 @@ export const rename = mutation({
 export const setDone = mutation({
   args: { itemId: v.id("checklistItems"), isDone: v.boolean() },
   handler: async (ctx, args) => {
-    await requireItem(ctx, args.itemId);
+    const ownerId = await requireUser(ctx);
+    await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.patch("checklistItems", args.itemId, { isDone: args.isDone });
     return null;
   },
@@ -63,7 +73,8 @@ export const setDone = mutation({
 export const remove = mutation({
   args: { itemId: v.id("checklistItems") },
   handler: async (ctx, args) => {
-    await requireItem(ctx, args.itemId);
+    const ownerId = await requireUser(ctx);
+    await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.delete("checklistItems", args.itemId);
     return null;
   },

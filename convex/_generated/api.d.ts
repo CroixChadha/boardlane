@@ -13,6 +13,7 @@ import type * as buckets from "../buckets.js";
 import type * as cards from "../cards.js";
 import type * as checklistItems from "../checklistItems.js";
 import type * as csvImport from "../csvImport.js";
+import type * as users from "../users.js";
 import type * as validation from "../validation.js";
 
 import type {
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   cards: typeof cards;
   checklistItems: typeof checklistItems;
   csvImport: typeof csvImport;
+  users: typeof users;
   validation: typeof validation;
 }>;
 

@@ -16,8 +16,15 @@ This project starts at the bare minimum and grows one issue and pull request at 
 
 ```bash
 npm install
-npx convex dev   # in a second terminal; connects to the backend
+cp .env.example .env.local   # then fill in the Clerk keys
+npx convex dev               # in a second terminal; connects to the backend
 npm run dev
+```
+
+You also need a Clerk application with a JWT template named `convex`, and its Frontend API URL set on the Convex deployment:
+
+```bash
+npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<your-app>.clerk.accounts.dev
 ```
 
 Then open http://localhost:3000.
@@ -47,4 +54,4 @@ If anything is wrong, nothing is imported and the message says which row to fix.
 
 ## Status
 
-The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex, plus CSV import. Next: sign-in and a public deployment.
+The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex, plus CSV import. Sign-in is required, and each account has its own private board. Next: a public deployment.

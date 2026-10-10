@@ -193,7 +193,7 @@ describe("parseBoardCsv", () => {
 
 describe("board.importCsv", () => {
   test("replaces the whole board and reports what it created", async () => {
-    const t = convexTest(schema, modules);
+    const t = convexTest(schema, modules).withIdentity({ subject: "user-a" });
     const oldBucket = await t.mutation(api.buckets.create, { name: "Old" });
     const oldCard = await t.mutation(api.cards.create, { bucketId: oldBucket, title: "Old card" });
     await t.mutation(api.checklistItems.create, { cardId: oldCard, title: "Old item" });
@@ -215,7 +215,7 @@ describe("board.importCsv", () => {
   });
 
   test("a CSV that fails validation leaves the board untouched", async () => {
-    const t = convexTest(schema, modules);
+    const t = convexTest(schema, modules).withIdentity({ subject: "user-a" });
     const bucketId = await t.mutation(api.buckets.create, { name: "Keep" });
     await t.mutation(api.cards.create, { bucketId, title: "Keep card" });
 
