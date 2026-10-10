@@ -5,7 +5,8 @@ import { ConvexError } from "convex/values";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Board, type BoardActions } from "./board";
+import { MAX_IMPORT_BYTES } from "@/convex/validation";
+import { Board, type BoardActions, type CsvImportSummary } from "./board";
 
 // The backend rejects bad input with a ConvexError whose data is a message
 // written for the user. Anything else is a fault the user cannot act on.
@@ -29,6 +30,7 @@ export default function Home() {
   const createItem = useMutation(api.checklistItems.create);
   const renameItem = useMutation(api.checklistItems.rename);
   const removeItem = useMutation(api.checklistItems.remove);
+  const importCsv = useMutation(api.board.importCsv);
 
   // Moving a card and ticking an item update the board straight away and are
   // rolled back by Convex if the backend rejects them, so they do not wait on
@@ -121,6 +123,22 @@ export default function Home() {
     },
     onDeleteChecklistItem: async (itemId) => {
       await run(() => removeItem({ itemId: itemId as Id<"checklistItems"> }));
+    },
+    // The backend enforces the same limit; checking here rejects an oversized
+    // file before the user is asked to confirm replacing the board.
+    onCheckCsvFile: (file) => {
+      if (file.size > MAX_IMPORT_BYTES) {
+        setError(`A CSV import can be at most ${MAX_IMPORT_BYTES / 1024} KB.`);
+        return false;
+      }
+      return true;
+    },
+    onImportCsv: async (file) => {
+      let summary: CsvImportSummary | null = null;
+      await run(async () => {
+        summary = await importCsv({ csv: await file.text() });
+      });
+      return summary;
     },
   };
 

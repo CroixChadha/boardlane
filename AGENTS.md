@@ -57,18 +57,14 @@ Modelled on Microsoft Planner.
 - The owner does not plan to sell this as software as a service.
 
 - **Sign-in (Clerk) is not in the first version.** It comes later as an onboarding step for first-time users. Do not add Clerk code, including commented-out code, until an issue asks for it.
-- **CSV import is a planned feature**, not part of the first version's four actions.
+- **CSV import replaces the whole board.** Every existing bucket, card and checklist item is deleted and the CSV's are created. When the board has anything on it, the page first asks "CSV import will delete all current buckets and cards. Proceed?" with Yes and No. The format is documented in the README, with an example in `examples/board.csv`.
 
 - **Data model:** three tables in `convex/schema.ts`. `buckets` (`name`); `cards` (`title`, `bucketId`); `checklistItems` (`title`, `cardId`, `isDone`). Buckets, cards and items show in the order they were created; there is no position column yet. The owner wrote the `checklistItems` table.
-- **Import CSV shape:** one row per checklist item, with three columns: bucket, card title, checklist item. Two rows are the same card when the bucket and the card title both match. A card with no checklist items has a row with an empty item cell.
+- **Import CSV shape:** one row per checklist item, with three columns: bucket, card title, checklist item. Two rows are the same card when the bucket and the card title both match, ignoring case. A card with no checklist items has a row with an empty item cell, and a row with only a bucket makes an empty bucket. Other common header names are accepted, extra columns are ignored, and the checklist column is optional. Parsing and validation live in `convex/csvImport.ts`.
 - Starting buckets while building: Phase 1 through Phase 5.
 - **Limits:** a board can have at most 25 buckets. A bucket can have at most 50 cards. A card can have at most 10 checklist items. The numbers live in `convex/validation.ts`. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
 - **Deleting:** deleting a bucket also deletes its cards and their checklist items; deleting a card also deletes its checklist items. The page asks "Are you sure?" first.
 - **Environments:** the Convex project has a development deployment and a separate production deployment with separate data. All building and testing happens on development. Production changes only through a deliberate deploy, and agents never run one without the owner asking.
-
-Open, not yet decided by the owner. Do not fill these in:
-
-- Where CSV import sits in the order of issues.
 
 ## Frontend brief (for Codex)
 
@@ -105,6 +101,7 @@ Every row also has `_creationTime` (a number). Buckets, cards and items are show
 | `checklistItems.rename` | `itemId`, `title` | |
 | `checklistItems.setDone` | `itemId`, `isDone` | |
 | `checklistItems.remove` | `itemId` | |
+| `board.importCsv` | `csv` (the file's text) | Replaces the board; returns how many buckets, cards and items it created |
 
 **What the interface must cover in the first version**
 
@@ -125,7 +122,7 @@ Every row also has `_creationTime` (a number). Buckets, cards and items are show
 
 New features beyond this list still need the owner's agreement before they are built.
 
-**Not in the first version. Do not build these yet:** sign-in or any account interface, CSV import, priority, time taken, status, reordering within a bucket.
+**Not in the first version. Do not build these yet:** sign-in or any account interface, priority, time taken, status, reordering within a bucket.
 
 **Libraries.** shadcn/ui components are added with `npx shadcn@latest add <name>`; only `button` is installed so far. Dragging needs a library; propose one to the owner before installing it.
 
@@ -166,7 +163,7 @@ convex/             Convex schema, functions (one file per table, plus board.ts)
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. Not built yet: CSV import, sign-in, a production deployment and hosting on Vercel. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. CSV import works too (`app/csv-import.tsx` is the button and confirmation dialog). Not built yet: sign-in, a production deployment and hosting on Vercel. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
