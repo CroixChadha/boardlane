@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
-import { requireUser } from "./users";
+import { requireUser, requireUserForWrite } from "./users";
 import { cleanTitle, MAX_BUCKETS } from "./validation";
 
 // Throws unless the bucket exists and belongs to the user. A bucket that
@@ -35,7 +35,7 @@ export const list = query({
 export const create = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     const name = cleanTitle(args.name);
     const existing = await ctx.db
       .query("buckets")
@@ -52,7 +52,7 @@ export const create = mutation({
 export const rename = mutation({
   args: { bucketId: v.id("buckets"), name: v.string() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     const name = cleanTitle(args.name);
     await requireBucket(ctx, ownerId, args.bucketId);
     await ctx.db.patch("buckets", args.bucketId, { name });
@@ -64,7 +64,7 @@ export const rename = mutation({
 export const remove = mutation({
   args: { bucketId: v.id("buckets") },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     await requireBucket(ctx, ownerId, args.bucketId);
 
     const cardsInBucket = ctx.db

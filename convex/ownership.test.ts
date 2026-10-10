@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
@@ -21,6 +22,7 @@ async function rejection(promise: Promise<unknown>): Promise<string> {
 // Two users sharing one database, plus a visitor who is not signed in.
 function setup() {
   const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
   return {
     anonymous: t,
     alice: t.withIdentity({ subject: "alice" }),
@@ -138,5 +140,35 @@ describe("one user's board is invisible to another", () => {
     );
     // Alice being full does not stop Bob.
     await bob.mutation(api.buckets.create, { name: "Bob bucket" });
+  });
+});
+
+describe("rate limits", () => {
+  test("a user who changes things too fast is refused, and others are not", async () => {
+    const { alice, bob } = setup();
+    const bucketId = await alice.mutation(api.buckets.create, { name: "Bucket" });
+    // The allowance is 120 changes; the bucket above used one.
+    for (let i = 0; i < 119; i++) {
+      await alice.mutation(api.buckets.rename, { bucketId, name: `Name ${i}` });
+    }
+    expect(
+      await rejection(alice.mutation(api.buckets.rename, { bucketId, name: "Too many" })),
+    ).toBe("You're making changes too fast. Wait a moment and try again.");
+    // The refused call changed nothing, and reading is not limited.
+    expect((await alice.query(api.buckets.list, {}))[0].name).toBe("Name 118");
+    await bob.mutation(api.buckets.create, { name: "Bob bucket" });
+  });
+
+  test("CSV imports have their own, tighter limit", async () => {
+    const { alice } = setup();
+    const csv = "bucket,card title\nPhase 1,Task";
+    for (let i = 0; i < 3; i++) {
+      await alice.mutation(api.board.importCsv, { csv });
+    }
+    expect(await rejection(alice.mutation(api.board.importCsv, { csv }))).toBe(
+      "You're importing too often. Wait a minute and try again.",
+    );
+    // Other changes still work after imports are used up.
+    await alice.mutation(api.buckets.create, { name: "Still allowed" });
   });
 });

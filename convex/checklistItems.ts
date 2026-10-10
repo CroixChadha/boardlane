@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type MutationCtx } from "./_generated/server";
-import { requireUser } from "./users";
+import { requireUserForWrite } from "./users";
 import { cleanTitle, MAX_CHECKLIST_ITEMS_PER_CARD } from "./validation";
 
 // Throws unless the item exists and belongs to the user.
@@ -21,7 +21,7 @@ async function requireItem(
 export const create = mutation({
   args: { cardId: v.id("cards"), title: v.string() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     const title = cleanTitle(args.title);
     const card = await ctx.db.get("cards", args.cardId);
     if (card === null || card.ownerId !== ownerId) {
@@ -49,7 +49,7 @@ export const create = mutation({
 export const rename = mutation({
   args: { itemId: v.id("checklistItems"), title: v.string() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     const title = cleanTitle(args.title);
     await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.patch("checklistItems", args.itemId, { title });
@@ -62,7 +62,7 @@ export const rename = mutation({
 export const setDone = mutation({
   args: { itemId: v.id("checklistItems"), isDone: v.boolean() },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.patch("checklistItems", args.itemId, { isDone: args.isDone });
     return null;
@@ -73,7 +73,7 @@ export const setDone = mutation({
 export const remove = mutation({
   args: { itemId: v.id("checklistItems") },
   handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+    const ownerId = await requireUserForWrite(ctx);
     await requireItem(ctx, ownerId, args.itemId);
     await ctx.db.delete("checklistItems", args.itemId);
     return null;
