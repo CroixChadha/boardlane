@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
+import { CSV_PROMPT, DEMO_CSV } from "../lib/csv-guide";
 import { parseBoardCsv, parseCsvRecords } from "./csvImport";
 import schema from "./schema";
 import {
@@ -235,5 +236,34 @@ describe("board.importCsv", () => {
     const board = await t.query(api.board.get, {});
     expect(board.buckets.map((bucket) => bucket.name)).toEqual(["Keep"]);
     expect(board.cards.map((card) => card.title)).toEqual(["Keep card"]);
+  });
+});
+
+describe("the in-app CSV guide", () => {
+  test("the demo board is a valid import", () => {
+    const board = parseBoardCsv(DEMO_CSV);
+    expect(board.buckets.map((bucket) => bucket.name)).toEqual([
+      "Backlog",
+      "In progress",
+      "Review",
+      "Done",
+    ]);
+    // A quoted value with commas, a card with no checklist, and a multi-item card.
+    expect(board.buckets[0].cards[1].items).toContain("Add name, email and message fields");
+    expect(board.buckets[3].cards[0]).toEqual({ title: "Choose a colour scheme", items: [] });
+    expect(board.buckets[1].cards[0].items).toHaveLength(3);
+  });
+
+  test("the prompt states the header and the limits the backend enforces", () => {
+    expect(CSV_PROMPT).toContain(HEADER);
+    for (const limit of [
+      `${MAX_IMPORT_ROWS} rows`,
+      `${MAX_BUCKETS} buckets`,
+      `${MAX_CARDS_PER_BUCKET} cards per bucket`,
+      `${MAX_CHECKLIST_ITEMS_PER_CARD} checklist items per card`,
+      `${MAX_TITLE_LENGTH} characters per value`,
+    ]) {
+      expect(CSV_PROMPT).toContain(limit);
+    }
   });
 });

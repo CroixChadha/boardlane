@@ -1,6 +1,15 @@
 bucket,card title,checklist item
-Backlog,Set up login,Create sign-in form
-Backlog,Set up login,"Test wrong password, twice"
-Backlog,Design home page,Sketch layout
-In progress,Write docs,
-Done,,
+Backlog,Write the About page,Draft a short bio
+Backlog,Write the About page,Pick a profile photo
+Backlog,Add a contact form,Choose a form service
+Backlog,Add a contact form,"Add name, email and message fields"
+Backlog,Add a contact form,Send a test message
+In progress,Build the home page,Sketch the layout
+In progress,Build the home page,Write the headline
+In progress,Build the home page,Add links to three projects
+In progress,Set up the domain,Buy the domain
+In progress,Set up the domain,Point it at the host
+Review,Check it on a phone,Test the menu
+Review,Check it on a phone,Test the contact form
+Done,Choose a colour scheme,
+Done,Create the repository,Add a README
