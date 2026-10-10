@@ -30,7 +30,7 @@ Do not add other frameworks, databases or UI libraries without the owner asking.
 | Repo files: `AGENTS.md`, `CLAUDE.md`, `README.md`, config | Whichever agent the owner asks |
 
 - Codex does not write or change backend code. Claude Code does not write or restyle markup and CSS.
-- Where a component needs data, Codex builds it to take that data and its actions as props. Connecting components to Convex is backend work and lives in `app/page.tsx` and `app/convex-client-provider.tsx`.
+- Where a component needs data, Codex builds it to take that data and its actions as props. Connecting components to Convex is backend work and lives in `app/workspace.tsx` and `app/convex-client-provider.tsx`.
 - If a task crosses the line, do your side and tell the owner what the other side needs.
 
 ## How the owner works with agents
@@ -81,7 +81,13 @@ The frontend agent may read anything under `convex/` but must not change it.
 
 Every row also has `_creationTime` (a number). Buckets, cards and items are shown in creation order, oldest first.
 
-**Data comes in through props.** `app/board.tsx` takes its data and its actions (for example `onAddCard`, `onMoveCard`) as props and never calls Convex itself. `app/page.tsx` loads the board from Convex and supplies the actions. Do not call Convex from components and do not store board data in the browser.
+**Three pages, one shell.** `/` is the board, `/home` is a summary with what to do next, and `/progress` shows completion overall and per bucket. Each route renders `<Workspace view="..." />` from `app/workspace.tsx`, which loads the board from Convex and supplies every action. `Board` in `app/board.tsx` draws the shared shell (navigation, header, mobile navigation) and the page for the given `view`; the Home and Progress contents are in `app/home-view.tsx` and `app/progress-view.tsx`, and their numbers come from `boardStats` in `app/board-stats.ts`.
+
+**Collapsible panels.** On wide screens the left navigation collapses to an icon rail and the board overview on the right can be hidden. Both choices are remembered per browser in `localStorage`, like the theme. Settings is still disabled.
+
+**Next.js keeps recently visited pages mounted but hidden.** After moving between pages the DOM holds hidden copies of the shell, so a browser check must count only visible elements.
+
+**Data comes in through props.** `app/board.tsx` takes its data and its actions (for example `onAddCard`, `onMoveCard`) as props and never calls Convex itself. `app/workspace.tsx` loads the board from Convex and supplies the actions. Do not call Convex from components and do not store board data in the browser.
 
 **How actions behave.** Every action returns a promise. If the backend rejects a call, the page puts the backend's message in the `error` prop and the promise still resolves, except `onMoveCard`, which rejects so the board does not announce a move that failed. Moving a card and ticking an item update the board immediately and roll back if the backend rejects them.
 
@@ -118,7 +124,7 @@ Every row also has `_creationTime` (a number). Buckets, cards and items are show
 
 - A light/dark theme toggle.
 - A progress panel and board overview, worked out from checklist progress (`isDone`). It needs no new backend data.
-- A navigation bar with Home.
+- A navigation bar with Home, Board and Progress pages.
 - A search box that filters cards.
 
 New features beyond this list still need the owner's agreement before they are built.
