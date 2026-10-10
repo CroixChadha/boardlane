@@ -26,22 +26,21 @@ Do not add other frameworks, databases or UI libraries without the owner asking.
 | Area | Responsible |
 |---|---|
 | Frontend markup and styling: page and component structure, Tailwind classes, shadcn/ui components | **Codex, solely** |
-| Backend: Convex schema and functions, data logic, Clerk authentication | **The owner and Claude Code** |
+| Backend: Convex schema and functions, data logic, connecting the page to Convex, Clerk authentication | **Claude Code** |
 | Repo files: `AGENTS.md`, `CLAUDE.md`, `README.md`, config | Whichever agent the owner asks |
 
 - Codex does not write or change backend code. Claude Code does not write or restyle markup and CSS.
-- Where a component needs data, Codex builds it to take that data and its actions as props. Connecting components to Convex is backend work.
+- Where a component needs data, Codex builds it to take that data and its actions as props. Connecting components to Convex is backend work and lives in `app/page.tsx` and `app/convex-client-provider.tsx`.
 - If a task crosses the line, do your side and tell the owner what the other side needs.
 
-## The owner is learning: read this first
+## How the owner works with agents
 
-The repo owner is a beginner/intermediate Python programmer who knows HTML and CSS. They own the design and write parts of the backend themselves.
+The owner sets direction and makes product decisions; agents write the code. Claude Code is the lead engineer: it owns the backend and the connection between page and backend, reviews and merges pull requests, and reports blockers to the owner. Codex is the frontend engineer.
 
-- **Do not implement anything marked `TODO(learner)`.** Do not rewrite or "tidy" code the owner wrote.
-- On owner-written code you may explain concepts, review, point out bugs and give hints. Write that code only when the owner explicitly asks you to.
-- **Do not make design decisions for the owner** (data model, functions, storage, features). Ask how they want it to work, then build what they chose. Offer options only when asked.
-- Prefer simple, readable code over clever code. Explain anything you add that the owner has not seen before.
-- The owner does not know TypeScript or JavaScript yet. What works for them: an agent writes one worked example with comments, comparing syntax to Python where it helps, and the owner writes the next similar piece themselves. Leave `TODO(learner)` blocks in that shape, not as blank stubs.
+- Bring the owner decisions about what the product does, not questions about how to implement it.
+- Do not add features the owner has not agreed to. Propose them first.
+- Prefer simple, readable code over clever code.
+- The owner is a beginner/intermediate Python programmer who knows HTML and CSS and is new to TypeScript. Explain things in plain language when reporting to them.
 
 ## Board design (from the owner)
 
@@ -63,7 +62,7 @@ Modelled on Microsoft Planner.
 - **Data model:** three tables in `convex/schema.ts`. `buckets` (`name`); `cards` (`title`, `bucketId`); `checklistItems` (`title`, `cardId`, `isDone`). Buckets, cards and items show in the order they were created; there is no position column yet. The owner wrote the `checklistItems` table.
 - **Import CSV shape:** one row per checklist item, with three columns: bucket, card title, checklist item. Two rows are the same card when the bucket and the card title both match. A card with no checklist items has a row with an empty item cell.
 - Starting buckets while building: Phase 1 through Phase 5.
-- **Limits:** a board can have at most 25 buckets. A card can have at most 10 checklist items. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
+- **Limits:** a board can have at most 25 buckets. A bucket can have at most 50 cards. A card can have at most 10 checklist items. The numbers live in `convex/validation.ts`. A CSV import is at most 500 rows and 100 KB, and each title is at most 200 characters. An import either fully succeeds or changes nothing.
 - **Deleting:** deleting a bucket also deletes its cards and their checklist items; deleting a card also deletes its checklist items. The page asks "Are you sure?" first.
 - **Environments:** the Convex project has a development deployment and a separate production deployment with separate data. All building and testing happens on development. Production changes only through a deliberate deploy, and agents never run one without the owner asking.
 
@@ -85,29 +84,34 @@ The frontend agent may read anything under `convex/` but must not change it.
 
 Every row also has `_creationTime` (a number). Buckets, cards and items are shown in creation order, oldest first.
 
-**Data comes in through props.** Components take their data and their actions (for example `onAddCard`, `onMoveCard`) as props, and are built and checked with placeholder data in these shapes. Do not call Convex from components, do not add a Convex provider to `app/layout.tsx`, and do not store board data in the browser. Connecting the page to Convex is backend work and happens after the components exist.
+**Data comes in through props.** `app/board.tsx` takes its data and its actions (for example `onAddCard`, `onMoveCard`) as props and never calls Convex itself. `app/page.tsx` loads the board from Convex and supplies the actions. Do not call Convex from components and do not store board data in the browser.
 
-**Backend functions.** "Exists" means it works on the development deployment today. "Planned" names and arguments may still change.
+**How actions behave.** Every action returns a promise. If the backend rejects a call, the page puts the backend's message in the `error` prop and the promise still resolves, except `onMoveCard`, which rejects so the board does not announce a move that failed. Moving a card and ticking an item update the board immediately and roll back if the backend rejects them.
 
-| Function | Arguments | State |
+**Backend functions.** All of these work on the development deployment.
+
+| Function | Arguments | Notes |
 |---|---|---|
-| `buckets.list` | none | Exists |
-| `buckets.create` | `name` | Exists |
-| `buckets.rename` | `bucketId`, `name` | Exists |
-| `buckets.remove` | `bucketId` | Exists; also deletes the bucket's cards and their items |
-| `cards.create` | `title`, `bucketId` | Planned (owner is writing it) |
-| `cards.rename` | `cardId`, `title` | Planned |
-| `cards.move` | `cardId`, `bucketId` | Planned |
-| `cards.remove` | `cardId` | Planned; also deletes the card's items |
-| Checklist items: add, rename, tick/untick, remove | | Planned |
-| Load the whole board | | Planned |
+| `board.get` | none | Returns `{ buckets, cards, checklistItems }`, each oldest first |
+| `buckets.list` | none | |
+| `buckets.create` | `name` | |
+| `buckets.rename` | `bucketId`, `name` | |
+| `buckets.remove` | `bucketId` | Also deletes the bucket's cards and their items |
+| `cards.create` | `bucketId`, `title` | |
+| `cards.rename` | `cardId`, `title` | |
+| `cards.move` | `cardId`, `bucketId` | |
+| `cards.remove` | `cardId` | Also deletes the card's items |
+| `checklistItems.create` | `cardId`, `title` | New items start unticked |
+| `checklistItems.rename` | `itemId`, `title` | |
+| `checklistItems.setDone` | `itemId`, `isDone` | |
+| `checklistItems.remove` | `itemId` | |
 
 **What the interface must cover in the first version**
 
 - Add, rename and delete a bucket; add, rename and delete a card; add, rename, tick and delete a single checklist item.
 - Move a card two ways: drag it to a bucket, and click the card then click the target bucket. The second way must work without a mouse drag (touch and keyboard).
 - An "Are you sure?" confirmation before deleting a bucket or a card, saying that everything inside is deleted too.
-- The limits, enforced by the backend and reflected in the interface: 25 buckets per board, 10 checklist items per card, 200 characters per name or title, no empty names. The add control is disabled or hidden at a limit.
+- The limits, enforced by the backend and reflected in the interface: 25 buckets per board, 50 cards per bucket, 10 checklist items per card, 200 characters per name or title, no empty names. The add control is disabled or hidden at a limit.
 - A place to show an error message from the backend. The backend rejects bad input with a short message written for the user, such as "A board can have at most 25 buckets."
 - Empty states: a board with no buckets, a bucket with no cards, a card with no checklist items.
 - Loading state: the page will receive no data for a moment before the board arrives.
@@ -145,7 +149,9 @@ npm install
 npm run dev
 ```
 
-The app is served at http://localhost:3000. `npm run build` and `npm run lint` must pass before a pull request is opened.
+The app is served at http://localhost:3000. `npm run build`, `npm run lint` and `npm test` must pass before a pull request is opened.
+
+`npm test` runs the backend tests in `convex/*.test.ts` against an in-memory Convex. Any change to a backend function comes with a test.
 
 Backend work needs `npx convex dev` running in a second terminal; it syncs the `convex/` folder to the dev deployment and reports errors. Clerk is not installed.
 
@@ -155,12 +161,12 @@ Backend work needs `npx convex dev` running in a second terminal; it syncs the `
 app/                Next.js pages and layout (App Router)
 components/ui/      shadcn/ui components
 lib/utils.ts        shadcn/ui helper
-convex/             Convex schema and functions; one file per table
+convex/             Convex schema, functions (one file per table, plus board.ts) and tests
 ```
 
 ## Status
 
-Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex, connected to a Convex dev deployment. The board interface (PR #4, merged) runs on placeholder data in `app/page.tsx`; it is not connected to Convex yet. `convex/schema.ts` defines all three tables. `convex/buckets.ts` (list, create, rename, remove) is complete and is the worked example for the owner. `convex/validation.ts` holds the shared title check. `convex/cards.ts` is the owner's: `create` is `TODO(learner)`, then rename, move and remove one at a time. Checklist item functions, loading the whole board, and the page are not started. Update this section as that changes.
+Next.js 16 with TypeScript, Tailwind CSS 4, shadcn/ui and Convex. The first version works end to end on the development deployment: the board page loads from Convex and every action (add, rename, delete, move, tick) saves to it. Not built yet: CSV import, sign-in, a production deployment and hosting on Vercel. Update this section as that changes.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

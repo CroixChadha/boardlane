@@ -631,6 +631,8 @@ export function Board({
           `${card.title} moved to ${bucket?.name ?? "the selected bucket"}.`,
         );
       }
+    } catch {
+      // The page shows the backend's message through the error prop.
     } finally {
       setMovingCardId(null);
     }

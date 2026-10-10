@@ -16,6 +16,7 @@ This project starts at the bare minimum and grows one issue and pull request at 
 
 ```bash
 npm install
+npx convex dev   # in a second terminal; connects to the backend
 npm run dev
 ```
 
@@ -23,4 +24,4 @@ Then open http://localhost:3000.
 
 ## Status
 
-In progress. The database tables and the bucket functions exist; the card functions, checklist functions and the board page are next. First version: buckets (columns) of task cards, where a card has a title and a checklist, with add, move, edit and delete. CSV import follows.
+The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex. Next: CSV import, then sign-in and a public deployment.
