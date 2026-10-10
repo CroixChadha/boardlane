@@ -23,6 +23,10 @@ import {
   LayoutDashboard,
   LoaderCircle,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Pencil,
   Plus,
   Search,
@@ -33,7 +37,11 @@ import {
   Upload,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { useCsvImport } from "./csv-import";
+import { HomeView } from "./home-view";
+import { ProgressView } from "./progress-view";
 
 export type Bucket = {
   _id: string;
@@ -82,7 +90,11 @@ export type CsvImportSummary = {
   checklistItems: number;
 };
 
+// Which page of the workspace to show inside the shared shell.
+export type WorkspaceView = "home" | "board" | "progress";
+
 type BoardProps = {
+  view: WorkspaceView;
   buckets: Bucket[];
   cards: Card[];
   checklistItems: ChecklistItem[];
@@ -592,6 +604,59 @@ function BucketColumn({
   );
 }
 
+// Whether a side panel is collapsed is remembered per browser, like the theme.
+const NAV_COLLAPSED_KEY = "boardlane-nav-collapsed";
+const OVERVIEW_HIDDEN_KEY = "boardlane-overview-hidden";
+
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string, value: boolean) {
+  try {
+    window.localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    // Storage can be unavailable (private windows); the panel still toggles.
+  }
+}
+
+const NAV_ITEMS: { view: WorkspaceView; label: string; href: string; icon: typeof Home }[] = [
+  { view: "home", label: "Home", href: "/home", icon: Home },
+  { view: "board", label: "Board", href: "/", icon: LayoutDashboard },
+  { view: "progress", label: "Progress", href: "/progress", icon: BarChart3 },
+];
+
+// The coloured band at the top of each page.
+function PageHero({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="relative mb-8 overflow-hidden rounded-[24px] bg-[var(--accent-yellow-soft)] px-6 py-7 md:px-8 md:py-9">
+      <span className="pointer-events-none absolute -right-12 -top-20 size-56 rounded-full bg-[var(--accent-red-soft)]" />
+      <span className="pointer-events-none absolute -bottom-24 right-28 size-48 rounded-full bg-[var(--accent-soft)]" />
+      <div className="relative flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">{eyebrow}</p>
+          <h1 className="editorial-title page-title text-[clamp(2.75rem,5vw,4.8rem)] leading-[0.98] tracking-[-0.045em]">
+            {title}
+          </h1>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function LoadingBoard() {
   return (
     <div className="grid min-h-screen place-items-center bg-[var(--bg-page)]">
@@ -604,6 +669,7 @@ function LoadingBoard() {
 }
 
 export function Board({
+  view,
   buckets,
   cards,
   checklistItems,
@@ -617,6 +683,12 @@ export function Board({
     string | null
   >(null);
   const [query, setQuery] = useState("");
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => typeof window !== "undefined" && readFlag(NAV_COLLAPSED_KEY),
+  );
+  const [overviewHidden, setOverviewHidden] = useState(
+    () => typeof window !== "undefined" && readFlag(OVERVIEW_HIDDEN_KEY),
+  );
   const theme = useSyncExternalStore(
     subscribeToTheme,
     getThemeSnapshot,
@@ -647,6 +719,28 @@ export function Board({
   );
 
   if (isLoading) return <LoadingBoard />;
+
+  // Below the xl width the navigation is always the narrow icon rail and the
+  // overview is not shown, so these only change the layout on wide screens.
+  const wideNav = !navCollapsed;
+  const showOverview = view === "board" && !overviewHidden;
+  const shellColumns = showOverview
+    ? wideNav
+      ? "xl:grid-cols-[208px_minmax(0,1fr)_288px]"
+      : "xl:grid-cols-[72px_minmax(0,1fr)_288px]"
+    : wideNav
+      ? "xl:grid-cols-[208px_minmax(0,1fr)]"
+      : "xl:grid-cols-[72px_minmax(0,1fr)]";
+
+  function toggleNav() {
+    writeFlag(NAV_COLLAPSED_KEY, !navCollapsed);
+    setNavCollapsed(!navCollapsed);
+  }
+
+  function toggleOverview() {
+    writeFlag(OVERVIEW_HIDDEN_KEY, !overviewHidden);
+    setOverviewHidden(!overviewHidden);
+  }
 
   function changeTheme() {
     const nextTheme = theme === "light" ? "dark" : "light";
@@ -688,64 +782,74 @@ export function Board({
 
   return (
     <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-5">
-      <div className="app-shell mx-auto grid min-h-screen max-w-[1800px] overflow-clip bg-[var(--bg-surface)] lg:min-h-[calc(100vh-40px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_20px_70px_rgba(14,23,43,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[208px_minmax(0,1fr)_288px]">
-        <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-4 md:flex md:flex-col xl:px-4">
-          <div className="flex items-center gap-3 px-1 xl:px-2">
+      <div className={`app-shell mx-auto grid min-h-screen max-w-[1800px] overflow-clip bg-[var(--bg-surface)] lg:min-h-[calc(100vh-40px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_20px_70px_rgba(14,23,43,0.08)] md:grid-cols-[72px_minmax(0,1fr)] ${shellColumns}`}>
+        <aside className={`glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-4 md:flex md:flex-col ${wideNav ? "xl:px-4" : ""}`}>
+          <div className={`flex items-center gap-3 px-1 ${wideNav ? "xl:px-2" : "justify-center"}`}>
             <BrandMark />
-            <span className="hidden text-lg font-medium tracking-[-0.04em] xl:block">
+            <span className={`hidden text-lg font-medium tracking-[-0.04em] ${wideNav ? "xl:block" : ""}`}>
               Boardlane
             </span>
           </div>
           <nav className="mt-8 space-y-1" aria-label="Main navigation">
-            {[
-              { label: "Home", icon: Home },
-              { label: "Board", icon: LayoutDashboard, active: true },
-              { label: "Progress", icon: BarChart3 },
-            ].map(({ label, icon: Icon, active }) => (
-              <button
-                key={label}
-                type="button"
-                aria-label={label}
-                aria-current={active ? "page" : undefined}
-                disabled={!active}
-                title={active ? undefined : `${label} is not yet available`}
-                className={`relative flex h-10 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] px-3 text-sm font-medium transition xl:justify-start ${
-                  active
-                    ? "bg-[var(--text-primary)] text-[var(--bg-surface)]"
-                    : "cursor-not-allowed text-[var(--text-tertiary)] opacity-60"
-                }`}
-              >
-                <Icon className="size-[18px]" />
-                <span className="sr-only xl:not-sr-only">{label}</span>
-              </button>
-            ))}
+            {NAV_ITEMS.map(({ view: itemView, label, href, icon: Icon }) => {
+              const active = itemView === view;
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  aria-current={active ? "page" : undefined}
+                  title={label}
+                  className={`relative flex h-10 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] px-3 text-sm font-medium transition ${wideNav ? "xl:justify-start" : ""} ${
+                    active
+                      ? "bg-[var(--text-primary)] text-[var(--bg-surface)]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  <Icon className="size-[18px]" />
+                  <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>{label}</span>
+                </Link>
+              );
+            })}
           </nav>
           <div className="mt-auto space-y-2">
+            <button
+              type="button"
+              onClick={toggleNav}
+              aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              aria-expanded={!navCollapsed}
+              title={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              className={`hidden h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] xl:flex ${wideNav ? "xl:justify-start" : ""}`}
+            >
+              {navCollapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
+              <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>Collapse</span>
+            </button>
             <button
               type="button"
               onClick={csvImport.openGuide}
               aria-label="Help"
               title="How CSV import works"
-              className="flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] xl:justify-start"
+              className={`flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] ${wideNav ? "xl:justify-start" : ""}`}
             >
               <CircleHelp className="size-5" />
-              <span className="sr-only xl:not-sr-only">Help</span>
+              <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>Help</span>
             </button>
             <button
               type="button"
               disabled
               aria-label="Settings"
               title="Settings are not yet available"
-              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 xl:justify-start"
+              className={`flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 ${wideNav ? "xl:justify-start" : ""}`}
             >
               <Settings className="size-5" />
-              <span className="sr-only xl:not-sr-only">Settings</span>
+              <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>Settings</span>
             </button>
           </div>
         </aside>
 
         <main className="min-w-0 bg-[var(--bg-surface)]">
           <header className="glass-panel sticky top-0 z-40 flex h-[68px] items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-7">
+            {view === "board" ? (
             <label className="search-pill flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] px-4 text-[var(--text-secondary)] md:max-w-xs">
               <Search className="size-4 shrink-0" />
               <span className="sr-only">Search cards</span>
@@ -772,6 +876,9 @@ export function Board({
                 className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
               />
             </label>
+            ) : (
+              <span />
+            )}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -781,6 +888,8 @@ export function Board({
               >
                 {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
               </button>
+              {view === "board" && (
+                <>
               <button
                 type="button"
                 onClick={csvImport.openGuide}
@@ -814,33 +923,41 @@ export function Board({
                   {atBucketLimit ? "Limit reached" : "Add bucket"}
                 </span>
               </button>
+                  <button
+                    type="button"
+                    onClick={toggleOverview}
+                    aria-label={overviewHidden ? "Show board overview" : "Hide board overview"}
+                    aria-expanded={!overviewHidden}
+                    title={overviewHidden ? "Show board overview" : "Hide board overview"}
+                    className="hidden size-10 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)] xl:grid"
+                  >
+                    {overviewHidden ? <PanelRightOpen className="size-4" /> : <PanelRightClose className="size-4" />}
+                  </button>
+                </>
+              )}
               <UserButton />
             </div>
           </header>
 
           <div className="px-5 pb-28 pt-7 md:px-7 md:pb-8 md:pt-8">
-            <div className="relative mb-8 overflow-hidden rounded-[24px] bg-[var(--accent-yellow-soft)] px-6 py-7 md:px-8 md:py-9">
-              <span className="pointer-events-none absolute -right-12 -top-20 size-56 rounded-full bg-[var(--accent-red-soft)]" />
-              <span className="pointer-events-none absolute -bottom-24 right-28 size-48 rounded-full bg-[var(--accent-soft)]" />
-              <div className="relative flex flex-wrap items-end justify-between gap-5">
-              <div>
-                <p className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
-                  Development workspace
-                </p>
-                <h1 className="editorial-title page-title text-[clamp(2.75rem,5vw,4.8rem)] leading-[0.98] tracking-[-0.045em]">
-                  Product <em>roadmap</em>
-                </h1>
-              </div>
-              <div className="segmented-control flex rounded-full border border-[var(--border-hairline)] bg-[var(--bg-glass)] p-1 text-xs font-medium backdrop-blur-sm">
-                <span className="rounded-full bg-[var(--text-primary)] px-3.5 py-2 text-[var(--bg-surface)]">
-                  Board
-                </span>
-                <span className="px-3.5 py-2 text-[var(--text-secondary)]">
-                  {cards.length} cards
-                </span>
-              </div>
-              </div>
-            </div>
+            {view === "home" && (
+              <PageHero eyebrow="Home" title={<>Your <em>workspace</em></>} />
+            )}
+            {view === "progress" && (
+              <PageHero eyebrow="Progress" title={<>How it&rsquo;s <em>going</em></>} />
+            )}
+            {view === "board" && (
+              <PageHero eyebrow="Development workspace" title={<>Product <em>roadmap</em></>}>
+                <div className="segmented-control flex rounded-full border border-[var(--border-hairline)] bg-[var(--bg-glass)] p-1 text-xs font-medium backdrop-blur-sm">
+                  <span className="rounded-full bg-[var(--text-primary)] px-3.5 py-2 text-[var(--bg-surface)]">
+                    Board
+                  </span>
+                  <span className="px-3.5 py-2 text-[var(--text-secondary)]">
+                    {cards.length} cards
+                  </span>
+                </div>
+              </PageHero>
+            )}
 
         {error && (
           <div
@@ -869,7 +986,20 @@ export function Board({
           </div>
         )}
 
-        {movingCardId && (
+        {view === "home" && (
+          <HomeView
+            buckets={buckets}
+            cards={cards}
+            checklistItems={checklistItems}
+            onOpenGuide={csvImport.openGuide}
+          />
+        )}
+
+        {view === "progress" && (
+          <ProgressView buckets={buckets} cards={cards} checklistItems={checklistItems} />
+        )}
+
+        {view === "board" && movingCardId && (
           <div className="mb-5 flex items-center gap-2 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)]">
             <Check className="size-4" />
             <span className="flex-1 font-medium">
@@ -885,7 +1015,7 @@ export function Board({
           </div>
         )}
 
-        {buckets.length === 0 && !addingBucket ? (
+        {view !== "board" ? null : buckets.length === 0 && !addingBucket ? (
           <section className="grid min-h-[60vh] place-items-center">
             <div className="max-w-sm text-center">
               <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
@@ -988,6 +1118,7 @@ export function Board({
           </div>
         </main>
 
+        {showOverview && (
         <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface)] p-5 xl:block">
           <p className="text-sm font-medium text-[var(--text-secondary)]">
             Board overview
@@ -1031,11 +1162,22 @@ export function Board({
             </div>
           </dl>
         </aside>
+        )}
       </div>
       <nav className="glass-panel fixed inset-x-4 bottom-4 z-50 flex h-16 items-center justify-around rounded-2xl border border-[var(--border-hairline)] shadow-[var(--shadow-hover)] md:hidden" aria-label="Mobile navigation">
-        <button type="button" disabled className="grid min-h-11 min-w-11 cursor-not-allowed place-items-center text-[var(--text-tertiary)] opacity-60" aria-label="Home, not yet available" title="Home is not yet available"><Home className="size-5" /></button>
-        <button type="button" aria-current="page" className="grid min-h-11 min-w-11 place-items-center text-[var(--accent)]" aria-label="Board"><LayoutDashboard className="size-5" /></button>
-        <button type="button" disabled className="grid min-h-11 min-w-11 cursor-not-allowed place-items-center text-[var(--text-tertiary)] opacity-60" aria-label="Progress, not yet available" title="Progress is not yet available"><BarChart3 className="size-5" /></button>
+        {NAV_ITEMS.map(({ view: itemView, label, href, icon: Icon }) => (
+          <Link
+            key={label}
+            href={href}
+            aria-label={label}
+            aria-current={itemView === view ? "page" : undefined}
+            className={`grid min-h-11 min-w-11 place-items-center ${
+              itemView === view ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"
+            }`}
+          >
+            <Icon className="size-5" />
+          </Link>
+        ))}
       </nav>
       <p className="sr-only" aria-live="polite">{moveAnnouncement}</p>
       {csvImport.elements}
