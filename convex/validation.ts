@@ -8,6 +8,10 @@ export const MAX_BUCKETS = 25;
 export const MAX_CARDS_PER_BUCKET = 50;
 export const MAX_CHECKLIST_ITEMS_PER_CARD = 10;
 
+// How big a CSV import can be.
+export const MAX_IMPORT_ROWS = 500;
+export const MAX_IMPORT_BYTES = 100 * 1024;
+
 // Checks a name or title typed by the user and returns the cleaned-up version.
 // Used for bucket names, card titles and checklist item text.
 //   - removes spaces from both ends (like Python's .strip())

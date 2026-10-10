@@ -22,6 +22,29 @@ npm run dev
 
 Then open http://localhost:3000.
 
+## Importing a board from CSV
+
+**Import CSV** replaces the whole board with the contents of a file, after asking you to confirm. The intended use: ask an AI agent to plan your work as a CSV in this format, then import it.
+
+One row is one checklist item on a card in a bucket:
+
+```csv
+bucket,card title,checklist item
+Backlog,Set up login,Create sign-in form
+Backlog,Set up login,"Test wrong password, twice"
+Backlog,Design home page,Sketch layout
+In progress,Write docs,
+Done,,
+```
+
+- Rows with the same bucket and card title are the same card, so a card with three checklist items takes three rows.
+- Leave the checklist item empty for a card with no checklist. Leave the card title empty too for an empty bucket.
+- Buckets, cards and items appear on the board in the order the file lists them.
+- Wrap a value in double quotes if it contains a comma.
+- Limits: 500 rows and 100 KB per file, 25 buckets, 50 cards per bucket, 10 checklist items per card, 200 characters per name.
+
+If anything is wrong, nothing is imported and the message says which row to fix. A ready-made example is in `examples/board.csv`.
+
 ## Status
 
-The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex. Next: CSV import, then sign-in and a public deployment.
+The first version works on a development backend: buckets (columns) of task cards, where a card has a title and a checklist, with add, rename, delete, move and tick, all saved to Convex, plus CSV import. Next: sign-in and a public deployment.

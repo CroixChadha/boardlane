@@ -31,6 +31,7 @@ import {
   Sun,
   Trash2,
 } from "lucide-react";
+import { CsvImportButton } from "./csv-import";
 
 export type Bucket = {
   _id: string;
@@ -65,6 +66,18 @@ export type BoardActions = {
   onRenameChecklistItem: (itemId: string, title: string) => void | Promise<void>;
   onToggleChecklistItem: (itemId: string, isDone: boolean) => void | Promise<void>;
   onDeleteChecklistItem: (itemId: string) => void | Promise<void>;
+  // Whether a chosen file is worth importing at all. A false result means
+  // the reason is already in the error prop.
+  onCheckCsvFile: (file: File) => boolean;
+  // Replaces the board with the file's contents. Resolves to what was
+  // created, or null if the import was rejected.
+  onImportCsv: (file: File) => Promise<CsvImportSummary | null>;
+};
+
+export type CsvImportSummary = {
+  buckets: number;
+  cards: number;
+  checklistItems: number;
 };
 
 type BoardProps = {
@@ -607,6 +620,7 @@ export function Board({
     () => "light",
   );
   const [moveAnnouncement, setMoveAnnouncement] = useState("");
+  const [importNotice, setImportNotice] = useState<string | null>(null);
   const atBucketLimit = buckets.length >= MAX_BUCKETS;
   const completedItems = checklistItems.filter((item) => item.isDone).length;
   const completion = checklistItems.length
@@ -751,6 +765,19 @@ export function Board({
               >
                 {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
               </button>
+              <CsvImportButton
+                boardHasContent={buckets.length > 0}
+                canImport={actions.onCheckCsvFile}
+                onImport={async (file) => {
+                  setImportNotice(null);
+                  const summary = await actions.onImportCsv(file);
+                  if (summary) {
+                    setImportNotice(
+                      `Imported ${summary.buckets} buckets, ${summary.cards} cards and ${summary.checklistItems} checklist items from ${file.name}.`,
+                    );
+                  }
+                }}
+              />
               <button
                 type="button"
                 disabled={atBucketLimit}
@@ -793,6 +820,23 @@ export function Board({
           >
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {importNotice && !error && (
+          <div
+            role="status"
+            className="mb-5 flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--success)_25%,transparent)] bg-[color-mix(in_srgb,var(--success)_10%,transparent)] px-4 py-3 text-sm text-[var(--success)]"
+          >
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+            <span className="flex-1">{importNotice}</span>
+            <button
+              type="button"
+              onClick={() => setImportNotice(null)}
+              className="font-semibold"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
