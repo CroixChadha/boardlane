@@ -32,49 +32,48 @@
 }
 
 :root {
-  --bg-page: #f5f5f7;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #fafafc;
-  --bg-glass: rgba(255, 255, 255, 0.76);
-  --text-primary: #1d1d1f;
-  --text-secondary: #626267;
-  --text-tertiary: #7c7c82;
-  --border-hairline: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.14);
-  --accent: #f2622e;
-  --accent-hover: #db531f;
-  --accent-soft: rgba(242, 98, 46, 0.12);
-  --btn-primary-bg: #1d1d1f;
+  --bg-page: #f1f0ec;
+  --bg-surface: #fbfaf7;
+  --bg-surface-2: #f5f3ee;
+  --bg-glass: rgba(251, 250, 247, 0.9);
+  --text-primary: #191823;
+  --text-secondary: #64616d;
+  --text-tertiary: #8c8993;
+  --border-hairline: rgba(36, 31, 48, 0.1);
+  --border-strong: rgba(36, 31, 48, 0.18);
+  --accent: #6246db;
+  --accent-hover: #5135c8;
+  --accent-soft: rgba(98, 70, 219, 0.11);
+  --btn-primary-bg: #6246db;
   --btn-primary-text: #ffffff;
-  --success: #30a46c;
-  --warning: #f5a524;
-  --danger: #e5484d;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 28px;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.08);
-  --shadow-drag: 0 24px 60px rgba(0, 0, 0, 0.18);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    Inter, "Segoe UI", Roboto, sans-serif;
+  --success: #168a66;
+  --warning: #b86f18;
+  --danger: #d84756;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-card: 0 1px 2px rgba(36, 31, 48, 0.04);
+  --shadow-hover: 0 12px 28px rgba(55, 43, 91, 0.1);
+  --shadow-drag: 0 24px 60px rgba(40, 31, 74, 0.2);
+  --font-sans: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 [data-theme="dark"] {
-  --bg-page: #000000;
-  --bg-surface: #1c1c1e;
-  --bg-surface-2: #141416;
-  --bg-glass: rgba(28, 28, 30, 0.76);
-  --text-primary: #f5f5f7;
-  --text-secondary: #a1a1a6;
-  --text-tertiary: #7c7c80;
+  --bg-page: #111015;
+  --bg-surface: #19181e;
+  --bg-surface-2: #211f27;
+  --bg-glass: rgba(25, 24, 30, 0.9);
+  --text-primary: #f4f1fa;
+  --text-secondary: #b6b1bf;
+  --text-tertiary: #85808e;
   --border-hairline: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --accent: #ff7a45;
-  --accent-hover: #ff8c60;
-  --accent-soft: rgba(255, 122, 69, 0.16);
-  --btn-primary-bg: #f5f5f7;
-  --btn-primary-text: #1d1d1f;
+  --accent: #9c87ff;
+  --accent-hover: #ad9aff;
+  --accent-soft: rgba(156, 135, 255, 0.15);
+  --btn-primary-bg: #9c87ff;
+  --btn-primary-text: #17131f;
 }
 
 @layer base {
@@ -106,11 +105,10 @@
 
 @layer utilities {
   .board-stage {
-    background-image: radial-gradient(
-      circle at 82% 4%,
-      color-mix(in srgb, var(--accent) 6%, transparent),
-      transparent 28rem
-    );
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--border-hairline) 45%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--border-hairline) 45%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 
   .glass-panel {
@@ -127,8 +125,9 @@
   }
 
   .task-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: var(--shadow-hover);
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border-hairline));
   }
 
   .primary-button {

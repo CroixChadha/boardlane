@@ -93,11 +93,8 @@ function subscribeToTheme(onChange: () => void) {
 
 function BrandMark() {
   return (
-    <span className="grid size-9 grid-cols-2 gap-1 rounded-[11px] bg-[var(--btn-primary-bg)] p-2 shadow-sm">
-      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-95" />
-      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-55" />
-      <span className="rounded-[2px] bg-[var(--accent)]" />
-      <span className="rounded-[2px] bg-[var(--btn-primary-text)] opacity-95" />
+    <span className="grid size-9 place-items-center rounded-full bg-[var(--accent)] text-sm font-bold tracking-[-0.06em] text-[var(--btn-primary-text)] shadow-sm">
+      BL
     </span>
   );
 }
@@ -357,7 +354,7 @@ function TaskCard({
               <GripVertical className="size-4" />
             </button>
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1 border-t border-[var(--border-hairline)] pt-2">
             <button
               type="button"
               onClick={() => setEditing(true)}
@@ -434,7 +431,7 @@ function BucketColumn({
   return (
     <section
       ref={ref}
-      className={`kanban-column w-[320px] shrink-0 snap-center rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-4 ${
+      className={`kanban-column w-[320px] shrink-0 snap-center rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-3.5 ${
         showDropTarget ? "drop-target" : ""
       }`}
       aria-labelledby={`bucket-${bucket._id}`}
@@ -455,14 +452,14 @@ function BucketColumn({
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="size-2 rounded-full bg-[var(--accent)]" />
+                <span className="size-2 rounded-sm bg-[var(--accent)]" />
                 <h2
                   id={`bucket-${bucket._id}`}
                   className="text-sm font-semibold text-[var(--text-primary)]"
                 >
                   {bucket.name}
                 </h2>
-                <span className="rounded-md bg-[var(--border-hairline)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-secondary)]">
+                <span className="rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
                   {totalCardCount}
                 </span>
               </div>
@@ -639,16 +636,16 @@ export function Board({
   }
 
   return (
-    <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-6">
-      <div className="app-shell mx-auto grid min-h-screen max-w-[1680px] bg-[var(--bg-surface)] lg:min-h-[calc(100vh-48px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] lg:shadow-[0_28px_90px_rgba(0,0,0,0.08)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
-        <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-5 md:flex md:flex-col xl:px-4">
+    <div className="board-stage min-h-screen bg-[var(--bg-page)] p-0 text-[var(--text-primary)] lg:p-4">
+      <div className="app-shell mx-auto grid min-h-screen max-w-[1800px] overflow-clip bg-[var(--bg-surface)] lg:min-h-[calc(100vh-32px)] lg:rounded-[var(--radius-xl)] lg:border lg:border-[var(--border-hairline)] md:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[208px_minmax(0,1fr)_288px]">
+        <aside className="glass-panel hidden border-r border-[var(--border-hairline)] px-3 py-4 md:flex md:flex-col xl:px-4">
           <div className="flex items-center gap-3 px-1 xl:px-2">
             <BrandMark />
-            <span className="hidden text-lg font-semibold tracking-[-0.025em] xl:block">
+            <span className="hidden text-base font-bold tracking-[-0.035em] xl:block">
               Boardlane
             </span>
           </div>
-          <nav className="mt-10 space-y-2" aria-label="Main navigation">
+          <nav className="mt-8 space-y-1" aria-label="Main navigation">
             {[
               { label: "Home", icon: Home },
               { label: "Board", icon: LayoutDashboard, active: true },
@@ -661,13 +658,13 @@ export function Board({
                 aria-current={active ? "page" : undefined}
                 disabled={!active}
                 title={active ? undefined : `${label} is not yet available`}
-                className={`relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm font-semibold transition xl:justify-start ${
+                className={`relative flex h-10 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] px-3 text-sm font-medium transition xl:justify-start ${
                   active
-                    ? "bg-[var(--accent-soft)] text-[var(--text-primary)] before:absolute before:-left-3 before:h-6 before:w-[3px] before:rounded-full before:bg-[var(--accent)] xl:before:-left-4"
+                    ? "bg-[var(--accent)] text-[var(--btn-primary-text)]"
                     : "cursor-not-allowed text-[var(--text-tertiary)] opacity-60"
                 }`}
               >
-                <Icon className={`size-5 ${active ? "text-[var(--accent)]" : ""}`} />
+                <Icon className="size-[18px]" />
                 <span className="sr-only xl:not-sr-only">{label}</span>
               </button>
             ))}
@@ -697,8 +694,8 @@ export function Board({
         </aside>
 
         <main className="min-w-0 bg-[var(--bg-surface)]">
-          <header className="glass-panel sticky top-0 z-40 flex h-[72px] items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-8">
-            <label className="search-pill flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 text-[var(--text-secondary)] md:max-w-xs">
+          <header className="glass-panel sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-[var(--border-hairline)] px-5 md:px-7">
+            <label className="search-pill flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] px-3 text-[var(--text-secondary)] md:max-w-xs">
               <Search className="size-4 shrink-0" />
               <span className="sr-only">Search cards</span>
               <input
@@ -728,7 +725,7 @@ export function Board({
               <button
                 type="button"
                 onClick={changeTheme}
-                className="grid size-11 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
+                className="grid size-9 place-items-center rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 aria-label={`Use ${theme === "light" ? "dark" : "light"} theme`}
               >
                 {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
@@ -737,7 +734,7 @@ export function Board({
                 type="button"
                 disabled={atBucketLimit}
                 onClick={() => setAddingBucket(true)}
-                className="primary-button flex h-11 items-center gap-2 rounded-full bg-[var(--btn-primary-bg)] px-4 text-sm font-semibold text-[var(--btn-primary-text)] shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                className="primary-button flex h-9 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--btn-primary-bg)] px-3.5 text-sm font-semibold text-[var(--btn-primary-text)] disabled:cursor-not-allowed disabled:opacity-40"
                 title={atBucketLimit ? "A board can have at most 25 buckets." : undefined}
               >
                 <Plus className="size-4" />
@@ -748,21 +745,21 @@ export function Board({
             </div>
           </header>
 
-          <div className="px-5 pb-28 pt-8 md:px-8 md:pb-8 md:pt-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+          <div className="px-5 pb-28 pt-7 md:px-7 md:pb-8 md:pt-8">
+            <div className="mb-7 flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border-hairline)] pb-6">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
-                  Development workspace
+                <p className="mb-2 text-xs font-semibold tracking-[0.02em] text-[var(--accent)]">
+                  Boardlane / Development
                 </p>
-                <h1 className="page-title text-[clamp(2.25rem,4vw,3.5rem)] font-semibold leading-[1.04] tracking-[-0.035em]">
+                <h1 className="page-title text-[clamp(2rem,4vw,3.35rem)] font-medium leading-[1.02] tracking-[-0.055em]">
                   Product roadmap
                 </h1>
               </div>
-              <div className="segmented-control flex rounded-full bg-[var(--bg-page)] p-1 text-sm font-medium">
-                <span className="rounded-full bg-[var(--bg-surface)] px-4 py-2 text-[var(--text-primary)] shadow-sm">
+              <div className="segmented-control flex rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-1 text-xs font-medium">
+                <span className="rounded-[7px] bg-[var(--bg-surface)] px-3 py-1.5 text-[var(--text-primary)] shadow-sm">
                   Board
                 </span>
-                <span className="px-4 py-2 text-[var(--text-secondary)]">
+                <span className="px-3 py-1.5 text-[var(--text-secondary)]">
                   {cards.length} cards
                 </span>
               </div>
@@ -836,7 +833,7 @@ export function Board({
               draggingOriginBucketId ? "" : "snap-x snap-proximity"
             }`}
           >
-            <div className="flex min-w-max items-start gap-6">
+            <div className="flex min-w-max items-start gap-4">
               {buckets.map((bucket) => (
                 <BucketColumn
                   key={bucket._id}
@@ -880,14 +877,14 @@ export function Board({
           </div>
         </main>
 
-        <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface)] p-6 xl:block">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
-            Board overview
+        <aside className="hidden border-l border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5 xl:block">
+          <p className="text-xs font-semibold text-[var(--accent)]">
+            Boardlane / Overview
           </p>
-          <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.025em]">
+          <h2 className="mt-2 text-[26px] font-medium tracking-[-0.045em]">
             Progress
           </h2>
-          <div className="mt-6 rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5">
+          <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-5">
             <div className="flex items-end justify-between">
               <span className="text-4xl font-semibold tracking-[-0.04em]">{completion}%</span>
               <CheckCircle2 className="size-6 text-[var(--success)]" />
@@ -902,9 +899,9 @@ export function Board({
               {completedItems} of {checklistItems.length} checklist items complete
             </p>
           </div>
-          <div className="mt-5 rounded-[22px] border border-[var(--border-hairline)] bg-[var(--bg-surface-2)] p-5">
+          <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border-hairline)] bg-[var(--accent)] p-5 text-[var(--btn-primary-text)]">
             <p className="font-semibold">Move cards your way</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+            <p className="mt-2 text-sm leading-6 opacity-75">
               Drag a card by its handle, or choose Move and then select a destination bucket.
             </p>
           </div>
