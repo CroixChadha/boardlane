@@ -8,8 +8,10 @@
  * @module
  */
 
+import type * as board from "../board.js";
 import type * as buckets from "../buckets.js";
 import type * as cards from "../cards.js";
+import type * as checklistItems from "../checklistItems.js";
 import type * as validation from "../validation.js";
 
 import type {
@@ -19,8 +21,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  board: typeof board;
   buckets: typeof buckets;
   cards: typeof cards;
+  checklistItems: typeof checklistItems;
   validation: typeof validation;
 }>;
 

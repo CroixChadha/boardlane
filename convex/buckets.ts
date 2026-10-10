@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { cleanTitle } from "./validation";
+import { cleanTitle, MAX_BUCKETS } from "./validation";
 
 // Every function in this file is something the page can ask the backend to do.
 // There are two kinds:
@@ -20,9 +20,6 @@ import { cleanTitle } from "./validation";
 //
 // "export const list = ..." makes a function the page can call as buckets.list
 // (file name, then function name).
-
-// The most buckets a board can have.
-export const MAX_BUCKETS = 25;
 
 // Returns the buckets, oldest first.
 export const list = query({
@@ -52,10 +49,12 @@ export const create = mutation({
 export const rename = mutation({
   args: { bucketId: v.id("buckets"), name: v.string() },
   handler: async (ctx, args) => {
+    const name = cleanTitle(args.name);
+    if ((await ctx.db.get("buckets", args.bucketId)) === null) {
+      throw new ConvexError("That bucket no longer exists.");
+    }
     // patch(table, id, changes) updates only the columns listed in changes.
-    await ctx.db.patch("buckets", args.bucketId, {
-      name: cleanTitle(args.name),
-    });
+    await ctx.db.patch("buckets", args.bucketId, { name });
     return null;
   },
 });
@@ -64,6 +63,10 @@ export const rename = mutation({
 export const remove = mutation({
   args: { bucketId: v.id("buckets") },
   handler: async (ctx, args) => {
+    if ((await ctx.db.get("buckets", args.bucketId)) === null) {
+      throw new ConvexError("That bucket no longer exists.");
+    }
+
     // Find the cards in this bucket, using the index from schema.ts.
     //   (q) => q.eq("bucketId", args.bucketId)
     // is a small function, like a Python lambda. It says: only rows whose
