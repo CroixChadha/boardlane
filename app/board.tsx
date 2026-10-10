@@ -31,6 +31,7 @@ import {
   Sun,
   Trash2,
 } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 import { CsvImportButton } from "./csv-import";
 
 export type Bucket = {
@@ -791,6 +792,7 @@ export function Board({
                   {atBucketLimit ? "Limit reached" : "Add bucket"}
                 </span>
               </button>
+              <UserButton />
             </div>
           </header>
 

@@ -1,12 +1,17 @@
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type MutationCtx } from "./_generated/server";
+import { requireUser } from "./users";
 import { cleanTitle, MAX_CARDS_PER_BUCKET } from "./validation";
 
-// Throws unless the bucket exists and has room for one more card.
-async function requireRoomInBucket(ctx: MutationCtx, bucketId: Id<"buckets">) {
+// Throws unless the bucket is the user's and has room for one more card.
+async function requireRoomInBucket(
+  ctx: MutationCtx,
+  ownerId: string,
+  bucketId: Id<"buckets">,
+) {
   const bucket = await ctx.db.get("buckets", bucketId);
-  if (bucket === null) {
+  if (bucket === null || bucket.ownerId !== ownerId) {
     throw new ConvexError("That bucket no longer exists.");
   }
   const cards = await ctx.db
@@ -20,9 +25,14 @@ async function requireRoomInBucket(ctx: MutationCtx, bucketId: Id<"buckets">) {
   }
 }
 
-async function requireCard(ctx: MutationCtx, cardId: Id<"cards">) {
+// Throws unless the card exists and belongs to the user.
+async function requireCard(
+  ctx: MutationCtx,
+  ownerId: string,
+  cardId: Id<"cards">,
+) {
   const card = await ctx.db.get("cards", cardId);
-  if (card === null) {
+  if (card === null || card.ownerId !== ownerId) {
     throw new ConvexError("That card no longer exists.");
   }
   return card;
@@ -32,9 +42,14 @@ async function requireCard(ctx: MutationCtx, cardId: Id<"cards">) {
 export const create = mutation({
   args: { bucketId: v.id("buckets"), title: v.string() },
   handler: async (ctx, args) => {
+    const ownerId = await requireUser(ctx);
     const title = cleanTitle(args.title);
-    await requireRoomInBucket(ctx, args.bucketId);
-    return await ctx.db.insert("cards", { title, bucketId: args.bucketId });
+    await requireRoomInBucket(ctx, ownerId, args.bucketId);
+    return await ctx.db.insert("cards", {
+      title,
+      bucketId: args.bucketId,
+      ownerId,
+    });
   },
 });
 
@@ -42,8 +57,9 @@ export const create = mutation({
 export const rename = mutation({
   args: { cardId: v.id("cards"), title: v.string() },
   handler: async (ctx, args) => {
+    const ownerId = await requireUser(ctx);
     const title = cleanTitle(args.title);
-    await requireCard(ctx, args.cardId);
+    await requireCard(ctx, ownerId, args.cardId);
     await ctx.db.patch("cards", args.cardId, { title });
     return null;
   },
@@ -54,11 +70,12 @@ export const rename = mutation({
 export const move = mutation({
   args: { cardId: v.id("cards"), bucketId: v.id("buckets") },
   handler: async (ctx, args) => {
-    const card = await requireCard(ctx, args.cardId);
+    const ownerId = await requireUser(ctx);
+    const card = await requireCard(ctx, ownerId, args.cardId);
     if (card.bucketId === args.bucketId) {
       return null;
     }
-    await requireRoomInBucket(ctx, args.bucketId);
+    await requireRoomInBucket(ctx, ownerId, args.bucketId);
     await ctx.db.patch("cards", args.cardId, { bucketId: args.bucketId });
     return null;
   },
@@ -68,7 +85,8 @@ export const move = mutation({
 export const remove = mutation({
   args: { cardId: v.id("cards") },
   handler: async (ctx, args) => {
-    await requireCard(ctx, args.cardId);
+    const ownerId = await requireUser(ctx);
+    await requireCard(ctx, ownerId, args.cardId);
     const itemsOnCard = ctx.db
       .query("checklistItems")
       .withIndex("by_cardId", (q) => q.eq("cardId", args.cardId));

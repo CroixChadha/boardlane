@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -18,7 +18,11 @@ function messageFor(error: unknown): string {
 }
 
 export default function Home() {
-  const board = useQuery(api.board.get);
+  // The board is private, so wait until Convex has verified who is signed in
+  // before asking for it. Signed-out visitors never reach this page: proxy.ts
+  // sends them to the sign-in page.
+  const { isAuthenticated } = useConvexAuth();
+  const board = useQuery(api.board.get, isAuthenticated ? {} : "skip");
   const [error, setError] = useState<string | null>(null);
 
   const createBucket = useMutation(api.buckets.create);
