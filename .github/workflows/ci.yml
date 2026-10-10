@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZHVtbXkuY2xlcmsuYWNjb3VudHMuZGV2JA
+      CLERK_SECRET_KEY: sk_test_dummy
+      NEXT_PUBLIC_CONVEX_URL: https://dummy.convex.cloud
+      NEXT_PUBLIC_CONVEX_SITE_URL: https://dummy.convex.site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
