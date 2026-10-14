@@ -1,6 +1,7 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useClerk } from "@clerk/nextjs";
+import { useConvexAuth, useAction, useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -32,6 +33,7 @@ export function Workspace({ view }: { view: WorkspaceView }) {
   const { isAuthenticated } = useConvexAuth();
   const board = useQuery(api.board.get, isAuthenticated ? {} : "skip");
   const [error, setError] = useState<string | null>(null);
+  const { signOut } = useClerk();
 
   const createBucket = useMutation(api.buckets.create);
   const renameBucket = useMutation(api.buckets.rename);
@@ -43,6 +45,8 @@ export function Workspace({ view }: { view: WorkspaceView }) {
   const renameItem = useMutation(api.checklistItems.rename);
   const removeItem = useMutation(api.checklistItems.remove);
   const importCsv = useMutation(api.board.importCsv);
+  const clearBoard = useMutation(api.board.clear);
+  const deleteAccount = useAction(api.account.deleteMine);
 
   // Moving a card and ticking an item update the board straight away and are
   // rolled back by Convex if the backend rejects them, so they do not wait on
@@ -135,6 +139,18 @@ export function Workspace({ view }: { view: WorkspaceView }) {
     },
     onDeleteChecklistItem: async (itemId) => {
       await run(() => removeItem({ itemId: itemId as Id<"checklistItems"> }));
+    },
+    onClearBoard: async () => {
+      const cleared = await run(() => clearBoard({}));
+      if (!cleared) throw new Error("The board was not cleared.");
+    },
+    // Deletes the Clerk login as well as the board, so the session is dead
+    // once this resolves. Sign out and leave the app rather than show a
+    // board that can no longer be loaded.
+    onDeleteAccount: async () => {
+      const deleted = await run(() => deleteAccount({}));
+      if (!deleted) throw new Error("The account was not deleted.");
+      await signOut({ redirectUrl: "/sign-in" });
     },
     // The backend enforces the same limit; checking here rejects an oversized
     // file before the user is asked to confirm replacing the board.

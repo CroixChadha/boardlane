@@ -228,3 +228,37 @@ describe("checklist items", () => {
     ).toBe("That card no longer exists.");
   });
 });
+
+describe("clear", () => {
+  test("deletes every bucket, card and checklist item on the board", async () => {
+    const t = setup();
+    const bucketId = await t.mutation(api.buckets.create, { name: "Bucket" });
+    const cardId = await t.mutation(api.cards.create, { bucketId, title: "Task" });
+    await t.mutation(api.checklistItems.create, { cardId, title: "Step" });
+
+    await t.mutation(api.board.clear, {});
+
+    expect(await t.query(api.board.get, {})).toEqual({
+      buckets: [],
+      cards: [],
+      checklistItems: [],
+    });
+  });
+
+  test("leaves an empty board empty, and leaves other users alone", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const alice = t.withIdentity({ subject: "alice" });
+    const bob = t.withIdentity({ subject: "bob" });
+    await bob.mutation(api.buckets.create, { name: "Bob's bucket" });
+
+    await alice.mutation(api.board.clear, {});
+
+    expect(await alice.query(api.board.get, {})).toEqual({
+      buckets: [],
+      cards: [],
+      checklistItems: [],
+    });
+    expect((await bob.query(api.board.get, {})).buckets).toHaveLength(1);
+  });
+});
