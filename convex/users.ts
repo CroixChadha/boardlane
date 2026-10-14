@@ -1,12 +1,14 @@
 import { ConvexError } from "convex/values";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import { rateLimiter } from "./rateLimits";
 
 // Returns the signed-in user's stable ID, or throws if nobody is signed in.
 // Every function calls this and only reads or changes rows whose ownerId
 // matches. The ID always comes from the verified session, never from an
 // argument, so one user cannot act as another.
-export async function requireUser(ctx: QueryCtx | MutationCtx): Promise<string> {
+export async function requireUser(
+  ctx: QueryCtx | MutationCtx | ActionCtx,
+): Promise<string> {
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) {
     throw new ConvexError("Please sign in.");
@@ -18,7 +20,7 @@ export async function requireUser(ctx: QueryCtx | MutationCtx): Promise<string> 
 // the user's rate limit and refuses it if they are going too fast. A refused
 // call throws, so it changes nothing and uses up none of the allowance.
 export async function requireUserForWrite(
-  ctx: MutationCtx,
+  ctx: MutationCtx | ActionCtx,
   limit: "write" | "importCsv" = "write",
 ): Promise<string> {
   const ownerId = await requireUser(ctx);

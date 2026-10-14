@@ -57,6 +57,8 @@ describe("signed-out visitors", () => {
       () => anonymous.mutation(api.checklistItems.setDone, { itemId, isDone: true }),
       () => anonymous.mutation(api.checklistItems.remove, { itemId }),
       () => anonymous.mutation(api.board.importCsv, { csv: "bucket,card\nA,B" }),
+      () => anonymous.mutation(api.board.clear, {}),
+      () => anonymous.action(api.account.deleteMine, {}),
     ];
     // Each call starts only when it is awaited, one at a time.
     for (const call of calls) {

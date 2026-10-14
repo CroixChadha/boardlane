@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useId, useState, useSyncExternalStore } from "react";
+import { FormEvent, useId, useState } from "react";
 import { AutoScroller } from "@dnd-kit/dom";
 import {
   DragDropProvider,
@@ -22,7 +22,6 @@ import {
   Home,
   LayoutDashboard,
   LoaderCircle,
-  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
@@ -32,7 +31,6 @@ import {
   Search,
   Settings,
   SquareKanban,
-  Sun,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -43,6 +41,7 @@ import { BrandMark } from "./brand-mark";
 import { useCsvImport } from "./csv-import";
 import { HomeView } from "./home-view";
 import { ProgressView } from "./progress-view";
+import { SettingsView } from "./settings-view";
 
 export type Bucket = {
   _id: string;
@@ -77,6 +76,8 @@ export type BoardActions = {
   onRenameChecklistItem: (itemId: string, title: string) => void | Promise<void>;
   onToggleChecklistItem: (itemId: string, isDone: boolean) => void | Promise<void>;
   onDeleteChecklistItem: (itemId: string) => void | Promise<void>;
+  onClearBoard: () => Promise<void>;
+  onDeleteAccount: () => Promise<void>;
   // Whether a chosen file is worth importing at all. A false result means
   // the reason is already in the error prop.
   onCheckCsvFile: (file: File) => boolean;
@@ -92,7 +93,7 @@ export type CsvImportSummary = {
 };
 
 // Which page of the workspace to show inside the shared shell.
-export type WorkspaceView = "home" | "board" | "progress";
+export type WorkspaceView = "home" | "board" | "progress" | "settings";
 
 type BoardProps = {
   view: WorkspaceView;
@@ -107,7 +108,6 @@ type BoardProps = {
 const MAX_BUCKETS = 25;
 const MAX_CHECKLIST_ITEMS = 10;
 const MAX_TITLE_LENGTH = 200;
-const THEME_EVENT = "boardlane-theme-change";
 
 // A card can be picked up with the mouse or a finger from anywhere on it, not
 // only from its grip handle. Buttons and inputs inside the card still work:
@@ -126,19 +126,6 @@ const dragAutoScroller = AutoScroller.configure({
   threshold: { x: 0.05, y: 0.1 },
   acceleration: 12,
 });
-
-function getThemeSnapshot(): "light" | "dark" {
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-}
-
-function subscribeToTheme(onChange: () => void) {
-  window.addEventListener(THEME_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(THEME_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
 
 function InlineForm({
   label,
@@ -620,6 +607,7 @@ const NAV_ITEMS: { view: WorkspaceView; label: string; href: string; icon: typeo
   { view: "home", label: "Home", href: "/home", icon: Home },
   { view: "board", label: "Board", href: "/", icon: LayoutDashboard },
   { view: "progress", label: "Progress", href: "/progress", icon: BarChart3 },
+  { view: "settings", label: "Settings", href: "/settings", icon: Settings },
 ];
 
 // The coloured band at the top of each page.
@@ -681,11 +669,6 @@ export function Board({
   const [overviewHidden, setOverviewHidden] = useState(
     () => typeof window !== "undefined" && readFlag(OVERVIEW_HIDDEN_KEY),
   );
-  const theme = useSyncExternalStore(
-    subscribeToTheme,
-    getThemeSnapshot,
-    () => "light",
-  );
   const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const [importNotice, setImportNotice] = useState<string | null>(null);
   const csvImport = useCsvImport({
@@ -732,13 +715,6 @@ export function Board({
   function toggleOverview() {
     writeFlag(OVERVIEW_HIDDEN_KEY, !overviewHidden);
     setOverviewHidden(!overviewHidden);
-  }
-
-  function changeTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    document.documentElement.dataset.theme = nextTheme;
-    window.localStorage.setItem("boardlane-theme", nextTheme);
-    window.dispatchEvent(new Event(THEME_EVENT));
   }
 
   function announceMove(message: string) {
@@ -826,16 +802,6 @@ export function Board({
               <CircleHelp className="size-5" />
               <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>Help</span>
             </button>
-            <button
-              type="button"
-              disabled
-              aria-label="Settings"
-              title="Settings are not yet available"
-              className={`flex h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--text-tertiary)] opacity-60 ${wideNav ? "xl:justify-start" : ""}`}
-            >
-              <Settings className="size-5" />
-              <span className={`sr-only ${wideNav ? "xl:not-sr-only" : ""}`}>Settings</span>
-            </button>
           </div>
         </aside>
 
@@ -872,14 +838,6 @@ export function Board({
               <span />
             )}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={changeTheme}
-                className="grid size-10 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]"
-                aria-label={`Use ${theme === "light" ? "dark" : "light"} theme`}
-              >
-                {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-              </button>
               {view === "board" && (
                 <>
               <button
@@ -938,6 +896,9 @@ export function Board({
             {view === "progress" && (
               <PageHero eyebrow="Progress" title={<>How it&rsquo;s <em>going</em></>} />
             )}
+            {view === "settings" && (
+              <PageHero eyebrow="Settings" title={<>Make it <em>yours</em></>} />
+            )}
             {view === "board" && (
               <PageHero eyebrow="Development workspace" title={<>Product <em>roadmap</em></>}>
                 <div className="segmented-control flex rounded-full border border-[var(--border-hairline)] bg-[var(--bg-glass)] p-1 text-xs font-medium backdrop-blur-sm">
@@ -989,6 +950,13 @@ export function Board({
 
         {view === "progress" && (
           <ProgressView buckets={buckets} cards={cards} checklistItems={checklistItems} />
+        )}
+
+        {view === "settings" && (
+          <SettingsView
+            onClearBoard={actions.onClearBoard}
+            onDeleteAccount={actions.onDeleteAccount}
+          />
         )}
 
         {view === "board" && movingCardId && (
