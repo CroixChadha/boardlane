@@ -39,6 +39,7 @@ import {
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "./brand-mark";
 import { useCsvImport } from "./csv-import";
 import { HomeView } from "./home-view";
 import { ProgressView } from "./progress-view";
@@ -137,15 +138,6 @@ function subscribeToTheme(onChange: () => void) {
     window.removeEventListener(THEME_EVENT, onChange);
     window.removeEventListener("storage", onChange);
   };
-}
-
-function BrandMark() {
-  return (
-    <span className="relative grid size-9 place-items-center rounded-full bg-[var(--text-primary)] text-[var(--bg-surface)]">
-      <span className="absolute size-[18px] rounded-full border-[3px] border-current" />
-      <span className="absolute bottom-[7px] right-[6px] size-3 rotate-45 border-b-[3px] border-r-[3px] border-current" />
-    </span>
-  );
 }
 
 function InlineForm({
