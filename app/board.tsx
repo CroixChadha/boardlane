@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Circle,
   CircleHelp,
+  Download,
   GripVertical,
   Home,
   LayoutDashboard,
@@ -78,6 +79,7 @@ export type BoardActions = {
   onDeleteChecklistItem: (itemId: string) => void | Promise<void>;
   onClearBoard: () => Promise<void>;
   onDeleteAccount: () => Promise<void>;
+  onExportCsv: () => Promise<void>;
   // Whether a chosen file is worth importing at all. A false result means
   // the reason is already in the error prop.
   onCheckCsvFile: (file: File) => boolean;
@@ -671,6 +673,7 @@ export function Board({
   );
   const [moveAnnouncement, setMoveAnnouncement] = useState("");
   const [importNotice, setImportNotice] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const csvImport = useCsvImport({
     boardHasContent: buckets.length > 0,
     canImport: actions.onCheckCsvFile,
@@ -720,6 +723,17 @@ export function Board({
   function announceMove(message: string) {
     setMoveAnnouncement("");
     window.setTimeout(() => setMoveAnnouncement(message), 0);
+  }
+
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      await actions.onExportCsv();
+    } catch {
+      // Workspace puts the backend's user-facing message in Board's error prop.
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function moveCard(
@@ -859,6 +873,22 @@ export function Board({
                 <Upload className="size-4" />
                 <span className="hidden sm:inline">
                   {csvImport.importing ? "Importing…" : "Import CSV"}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={exporting}
+                onClick={() => void exportCsv()}
+                className="flex h-10 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-2)] disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={exporting ? "Exporting board as CSV" : "Export board as CSV"}
+              >
+                {exporting ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                <span className="hidden sm:inline">
+                  {exporting ? "Exporting…" : "Export CSV"}
                 </span>
               </button>
               <button
