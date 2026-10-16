@@ -44,6 +44,7 @@ describe("signed-out visitors", () => {
     const { bucketId, cardId, itemId } = await aliceBoard(alice);
     const calls = [
       () => anonymous.query(api.board.get, {}),
+      () => anonymous.query(api.board.exportCsv, {}),
       () => anonymous.query(api.buckets.list, {}),
       () => anonymous.mutation(api.buckets.create, { name: "X" }),
       () => anonymous.mutation(api.buckets.rename, { bucketId, name: "X" }),
