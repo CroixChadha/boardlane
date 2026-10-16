@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, type MutationCtx } from "./_generated/server";
-import { parseBoardCsv } from "./csvImport";
+import { parseBoardCsv, stringifyBoardCsv } from "./csvImport";
 import { requireUser, requireUserForWrite } from "./users";
 import {
   MAX_BUCKETS,
@@ -63,6 +63,27 @@ export const get = query({
       .withIndex("by_ownerId", (q) => q.eq("ownerId", ownerId))
       .take(MAX_CHECKLIST_ITEMS);
     return { buckets, cards, checklistItems };
+  },
+});
+
+// Returns the user's whole board as CSV text, in the format importCsv reads.
+export const exportCsv = query({
+  args: {},
+  handler: async (ctx) => {
+    const ownerId = await requireUser(ctx);
+    const buckets = await ctx.db
+      .query("buckets")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", ownerId))
+      .take(MAX_BUCKETS);
+    const cards = await ctx.db
+      .query("cards")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", ownerId))
+      .take(MAX_CARDS);
+    const checklistItems = await ctx.db
+      .query("checklistItems")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", ownerId))
+      .take(MAX_CHECKLIST_ITEMS);
+    return stringifyBoardCsv(buckets, cards, checklistItems);
   },
 });
 

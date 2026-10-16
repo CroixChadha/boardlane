@@ -1,7 +1,13 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { useConvexAuth, useAction, useMutation, useQuery } from "convex/react";
+import {
+  useAction,
+  useConvex,
+  useConvexAuth,
+  useMutation,
+  useQuery,
+} from "convex/react";
 import { ConvexError } from "convex/values";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -34,6 +40,7 @@ export function Workspace({ view }: { view: WorkspaceView }) {
   const board = useQuery(api.board.get, isAuthenticated ? {} : "skip");
   const [error, setError] = useState<string | null>(null);
   const { signOut } = useClerk();
+  const convex = useConvex();
 
   const createBucket = useMutation(api.buckets.create);
   const renameBucket = useMutation(api.buckets.rename);
@@ -143,6 +150,20 @@ export function Workspace({ view }: { view: WorkspaceView }) {
     onClearBoard: async () => {
       const cleared = await run(() => clearBoard({}));
       if (!cleared) throw new Error("The board was not cleared.");
+    },
+    onExportCsv: async () => {
+      let csv: string | null = null;
+      const fetched = await run(async () => {
+        csv = await convex.query(api.board.exportCsv, {});
+      });
+      if (!fetched || csv === null) throw new Error("The board was not exported.");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "boardlane-board.csv";
+      link.click();
+      URL.revokeObjectURL(url);
     },
     // Deletes the Clerk login as well as the board, so the session is dead
     // once this resolves. Sign out and leave the app rather than show a

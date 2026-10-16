@@ -262,3 +262,82 @@ describe("clear", () => {
     expect((await bob.query(api.board.get, {})).buckets).toHaveLength(1);
   });
 });
+
+describe("exportCsv", () => {
+  test("an empty board exports just the header", async () => {
+    const t = setup();
+    expect(await t.query(api.board.exportCsv, {})).toBe(
+      "bucket,card title,checklist item",
+    );
+  });
+
+  test("a bucket with no cards and a card with no items each get one row", async () => {
+    const t = setup();
+    await t.mutation(api.buckets.create, { name: "Empty bucket" });
+    const bucketId = await t.mutation(api.buckets.create, { name: "Bucket" });
+    await t.mutation(api.cards.create, { bucketId, title: "Bare card" });
+
+    expect(await t.query(api.board.exportCsv, {})).toBe(
+      [
+        "bucket,card title,checklist item",
+        "Empty bucket,,",
+        "Bucket,Bare card,",
+      ].join("\n"),
+    );
+  });
+
+  test("quotes values with commas, quotes or line breaks", async () => {
+    const t = setup();
+    const bucketId = await t.mutation(api.buckets.create, { name: 'Phase "one"' });
+    const cardId = await t.mutation(api.cards.create, { bucketId, title: "A, B" });
+    await t.mutation(api.checklistItems.create, { cardId, title: "Line\nbreak" });
+
+    expect(await t.query(api.board.exportCsv, {})).toBe(
+      [
+        "bucket,card title,checklist item",
+        '"Phase ""one""","A, B","Line\nbreak"',
+      ].join("\n"),
+    );
+  });
+
+  test("only exports the signed-in user's board", async () => {
+    const { alice, bob } = (() => {
+      const t = convexTest(schema, modules);
+      rateLimiterTest.register(t);
+      return {
+        alice: t.withIdentity({ subject: "alice" }),
+        bob: t.withIdentity({ subject: "bob" }),
+      };
+    })();
+    await alice.mutation(api.buckets.create, { name: "Alice bucket" });
+    await bob.mutation(api.buckets.create, { name: "Bob bucket" });
+
+    expect(await alice.query(api.board.exportCsv, {})).toBe(
+      "bucket,card title,checklist item\nAlice bucket,,",
+    );
+  });
+
+  test("round trips through importCsv to the same board", async () => {
+    const t = setup();
+    const bucketId = await t.mutation(api.buckets.create, { name: "Phase 1" });
+    const cardId = await t.mutation(api.cards.create, { bucketId, title: "Task, with comma" });
+    await t.mutation(api.checklistItems.create, { cardId, title: "Step one" });
+    await t.mutation(api.checklistItems.create, { cardId, title: "Step two" });
+    await t.mutation(api.buckets.create, { name: "Empty phase" });
+    const before = await t.query(api.board.get, {});
+
+    const csv = await t.query(api.board.exportCsv, {});
+    await t.mutation(api.board.importCsv, { csv });
+
+    const after = await t.query(api.board.get, {});
+    expect(after.buckets.map((bucket) => bucket.name)).toEqual(
+      before.buckets.map((bucket) => bucket.name),
+    );
+    expect(after.cards.map((card) => card.title)).toEqual(
+      before.cards.map((card) => card.title),
+    );
+    expect(after.checklistItems.map((item) => item.title)).toEqual(
+      before.checklistItems.map((item) => item.title),
+    );
+  });
+});

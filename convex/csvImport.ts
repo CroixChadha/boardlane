@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import {
   MAX_BUCKETS,
   MAX_CARDS_PER_BUCKET,
@@ -199,4 +200,44 @@ export function parseBoardCsv(text: string): ParsedBoard {
   }
 
   return board;
+}
+
+// RFC 4180: a value is wrapped in double quotes when it contains a comma, a
+// double quote, or a line break; a double quote inside it is written twice.
+function csvField(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+// Writes a board as the CSV parseBoardCsv reads: one row per checklist item,
+// a card with none gets a row with an empty item cell, and a bucket with no
+// cards gets a row with only its name. Buckets, cards and items are written
+// in the order given, which board.get returns oldest first, so importing the
+// result recreates the same board (ticked state aside: the format has no
+// column for it).
+export function stringifyBoardCsv(
+  buckets: Doc<"buckets">[],
+  cards: Doc<"cards">[],
+  checklistItems: Doc<"checklistItems">[],
+): string {
+  const lines = ["bucket,card title,checklist item"];
+  for (const bucket of buckets) {
+    const bucketCards = cards.filter((card) => card.bucketId === bucket._id);
+    if (bucketCards.length === 0) {
+      lines.push(`${csvField(bucket.name)},,`);
+      continue;
+    }
+    for (const card of bucketCards) {
+      const cardItems = checklistItems.filter((item) => item.cardId === card._id);
+      if (cardItems.length === 0) {
+        lines.push(`${csvField(bucket.name)},${csvField(card.title)},`);
+        continue;
+      }
+      for (const item of cardItems) {
+        lines.push(
+          `${csvField(bucket.name)},${csvField(card.title)},${csvField(item.title)}`,
+        );
+      }
+    }
+  }
+  return lines.join("\n");
 }
